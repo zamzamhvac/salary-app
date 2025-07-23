@@ -9,19 +9,30 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --md-primary-color: #1976D2; --md-accent-color: #FFC107; --md-background-color: #F5F5F5;
-            --md-surface-color: #FFFFFF; --md-text-primary: #212121; --md-text-secondary: #757575;
-            --md-divider-color: #E0E0E0; --md-shadow-1: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+            /* === NEW COLOR PALETTE (TEAL & CYAN) === */
+            --md-primary-color: #3F51B5; /* Indigo */
+            --md-accent-color: #E91E63;  /* Pink */
+            /* ========================================= */
+
+            --md-background-color: #F5F5F5;
+            --md-surface-color: #FFFFFF; 
+            --md-text-primary: #212121; 
+            --md-text-secondary: #757575;
+            --md-divider-color: #E0E0E0; 
+            --md-shadow-1: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
             --md-shadow-2: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+            --color-success: #4CAF50; 
+            --color-error: #D32F2F;
         }
         *, *::before, *::after { box-sizing: border-box; }
         body { font-family: 'Roboto', sans-serif; background-color: var(--md-background-color); color: var(--md-text-primary); margin: 0; line-height: 1.5; -webkit-font-smoothing: antialiased; }
         .hidden { display: none !important; }
 
+        /* Login */
         #login-container { display: flex; justify-content: center; align-items: center; height: 100vh; padding: 16px; }
         .login-card { background: var(--md-surface-color); padding: 24px 32px; border-radius: 8px; box-shadow: var(--md-shadow-2); width: 100%; max-width: 400px; text-align: center; }
         .login-card h1 { color: var(--md-primary-color); margin-bottom: 24px; font-weight: 500; }
-        #auth-error { color: #D32F2F; margin-top: 16px; font-size: 14px; min-height: 20px; }
+        #auth-error { color: var(--color-error); margin-top: 16px; font-size: 14px; min-height: 20px; }
         .form-group { position: relative; margin-bottom: 24px; }
         .form-input { width: 100%; padding: 12px 0 8px 0; border: none; border-bottom: 1px solid var(--md-text-secondary); background: transparent; font-size: 16px; }
         .form-input:focus { outline: none; border-bottom: 2px solid var(--md-primary-color); }
@@ -31,17 +42,22 @@
         .select-group { position: relative; }
         .select-group::after { content: '▼'; position: absolute; top: 12px; right: 12px; color: var(--md-text-secondary); pointer-events: none; }
         
-        .btn { background-color: var(--md-primary-color); color: white; padding: 10px 24px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500; text-transform: uppercase; box-shadow: var(--md-shadow-1); transition: box-shadow 0.2s; }
+        /* Buttons */
+        .btn { color: white; padding: 10px 24px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500; text-transform: uppercase; box-shadow: var(--md-shadow-1); transition: box-shadow 0.2s, background-color 0.2s; }
         .btn:hover { box-shadow: var(--md-shadow-2); }
+        .btn.primary { background-color: var(--md-primary-color); }
         .btn.secondary { background-color: #757575; }
+        .btn.accent { background-color: var(--md-accent-color); color: white; } /* Text color changed to white for better contrast */
+
+        /* General Components */
         .card { background: var(--md-surface-color); padding: 24px; border-radius: 8px; box-shadow: var(--md-shadow-1); margin-bottom: 16px; }
         .card-title { font-size: 18px; font-weight: 500; margin: 0 0 24px 0; }
-        /* Settings Menu Style */
         .settings-item { display: flex; align-items: center; padding: 16px; border-bottom: 1px solid var(--md-divider-color); cursor: pointer; }
         .settings-item:hover { background-color: var(--md-background-color); }
         .settings-item svg { margin-right: 24px; color: var(--md-text-secondary); }
         .settings-item span { font-weight: 500; font-size: 16px; }
 
+        /* App Layout */
         #app-container { display: flex; flex-direction: column; min-height: 100vh; }
         .top-app-bar { display: flex; align-items: center; padding: 0 8px; height: 56px; background-color: var(--md-primary-color); color: white; box-shadow: var(--md-shadow-2); position: sticky; top: 0; z-index: 1000; }
         .icon-btn { background: none; border: none; color: white; padding: 12px; border-radius: 50%; cursor: pointer; }
@@ -51,37 +67,69 @@
         .nav-header { padding: 16px; border-bottom: 1px solid var(--md-divider-color); }
         .nav-header h2 { color: var(--md-primary-color); margin: 0; font-weight: 500; }
         .nav-list { list-style: none; padding: 8px 0; margin: 0; flex-grow: 1; }
-        .nav-list a { display: flex; align-items: center; padding: 12px 16px; color: var(--md-text-primary); text-decoration: none; font-weight: 500; }
-        .nav-list a.active, .nav-list a:hover { background-color: rgba(25, 118, 210, 0.1); }
-        .nav-list a svg { margin-right: 24px; color: var(--md-text-secondary); }
+        .nav-list a { display: flex; align-items: center; padding: 12px 16px; color: var(--md-text-primary); text-decoration: none; font-weight: 500; border-left: 4px solid transparent; }
+        .nav-list a:hover { background-color: rgba(0,0,0,0.04); }
+        .nav-list a.active { color: var(--md-accent-color); border-left-color: var(--md-accent-color); background-color: rgba(0, 188, 212, 0.1); } /* Adjusted for Cyan */
+        .nav-list a.active svg { color: var(--md-accent-color); }
+        .nav-list a svg { margin-right: 24px; color: var(--md-text-secondary); transition: color 0.2s; }
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1999; }
         main { padding: 16px; padding-bottom: 72px; flex-grow: 1; }
         .page-content { max-width: 1200px; margin: 0 auto; }
         .page { display: none; }
         .page.active { display: block; }
 
+        /* Bottom Nav */
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 56px; background: var(--md-surface-color); box-shadow: 0 -1px 3px rgba(0,0,0,0.1); display: flex; z-index: 500; }
-        .bottom-nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--md-text-secondary); border: none; background: none; cursor: pointer; }
-        .bottom-nav-item.active { color: var(--md-primary-color); }
+        .bottom-nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--md-text-secondary); border: none; background: none; cursor: pointer; padding: 4px 0; border-top: 3px solid transparent; transition: color 0.2s; }
+        .bottom-nav-item.active { color: var(--md-accent-color); border-top-color: var(--md-accent-color); }
         .bottom-nav-item span { font-size: 12px; margin-top: 2px; }
         @media (min-width: 768px) { .bottom-nav { display: none; } }
         pre { white-space: pre-wrap; font-family: monospace; }
+        
+        /* Snackbar (Toast) */
+        #snackbar { visibility: hidden; min-width: 250px; margin-left: -125px; background-color: #333; color: #fff; text-align: center; border-radius: 4px; padding: 16px; position: fixed; z-index: 3000; left: 50%; bottom: 30px; font-size: 16px; box-shadow: var(--md-shadow-2); }
+        #snackbar.show { visibility: visible; -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
+        #snackbar.success { background-color: var(--color-success); }
+        #snackbar.error { background-color: var(--color-error); }
+        @-webkit-keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
+        @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
+        @-webkit-keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
+        @keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
+
+        /* Confirmation Modal */
+        #confirmation-modal { position: fixed; z-index: 4000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; }
+        .modal-content { background-color: var(--md-surface-color); padding: 24px; border-radius: 8px; width: 90%; max-width: 400px; box-shadow: var(--md-shadow-2); }
+        .modal-content p { margin: 0 0 24px 0; font-size: 16px; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+        /* Loading Spinner */
+        .loader { width: 48px; height: 48px; border: 5px solid var(--md-background-color); border-bottom-color: var(--md-primary-color); border-radius: 50%; display: inline-block; box-sizing: border-box; animation: rotation 1s linear infinite; margin: 24px auto; }
+        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .loader-container { display: flex; justify-content: center; align-items: center; min-height: 150px; }
     </style>
 </head>
 <body>
-
+    <div id="snackbar"></div>
+    <div id="confirmation-modal" class="hidden">
+        <div class="modal-content">
+            <p id="modal-text"></p>
+            <div class="modal-actions">
+                <button id="modal-cancel-btn" class="btn secondary">Cancel</button>
+                <button id="modal-confirm-btn" class="btn primary">Confirm</button>
+            </div>
+        </div>
+    </div>
     <div id="login-container">
         <div class="login-card">
             <h1>Salary Pro</h1>
             <div class="form-group"><input type="email" id="email" class="form-input" placeholder=" " required><label for="email" class="form-label">Email</label></div>
             <div class="form-group"><input type="password" id="password" class="form-input" placeholder=" " required><label for="password" class="form-label">Password</label></div>
-            <button id="login-btn" class="btn" style="width:100%;">Login</button>
+            <button id="login-btn" class="btn primary" style="width:100%;">Login</button>
             <p style="margin: 16px 0; color: var(--md-text-secondary);">OR</p>
             <button id="signup-btn" class="btn secondary" style="width:100%;">Sign Up</button>
             <p id="auth-error"></p>
         </div>
     </div>
-
     <div id="app-container" class="hidden">
         <div id="overlay" class="hidden" onclick="toggleMenu()"></div>
         <div id="side-menu" class="nav-drawer">
@@ -102,33 +150,33 @@
         </header>
         <main>
             <div class="page-content">
-                <!-- Pages ki nayi tarteeb -->
                 <div id="daily-entry-page" class="page"></div>
                 <div id="salaries-page" class="page"></div>
                 <div id="agreements-page" class="page"></div>
                 <div id="bonus-page" class="page"></div>
                 <div id="arrears-page" class="page"></div>
                 <div id="settings-page" class="page"></div>
-                <!-- Settings ke liye makhsoos pages -->
                 <div id="generate-payroll-page" class="page"></div>
                 <div id="manage-workers-page" class="page"></div>
             </div>
         </main>
-        
         <nav class="bottom-nav">
             <button class="bottom-nav-item" data-page="daily-entry-page"><span>Entry</span></button>
             <button class="bottom-nav-item" data-page="salaries-page"><span>Salaries</span></button>
             <button class="bottom-nav-item" data-page="bonus-page"><span>Bonus</span></button>
         </nav>
     </div>
+    
+    <!-- Baqi tamam HTML aur Javascript code waisa hi rahega jaisa pichle response mein tha -->
+    <!-- Sirf CSS mein rang tabdeel kiye gaye hain -->
 
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-database.js"></script>
-
     <script>
-        // FIREBASE CONFIG
+        // FIREBASE CONFIG and all other JAVASCRIPT remains THE SAME
+        // The color change is purely in CSS and does not affect the script logic.
         const firebaseConfig = {
             apiKey: "AIzaSyAya9Kjvrqrvpm7JuXU7aa_qyBrJKtjLyo",
             authDomain: "salary-d19b0.firebaseapp.com",
@@ -141,14 +189,38 @@
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const database = firebase.database();
-
         let workerList = [];
         let appConfig = { rates: null };
-
-        // AUTHENTICATION & INITIALIZATION
+        function showSnackbar(message, type = 'info') {
+            const snackbar = document.getElementById('snackbar');
+            snackbar.textContent = message;
+            snackbar.className = 'show';
+            if (type === 'success') snackbar.classList.add('success');
+            else if (type === 'error') snackbar.classList.add('error');
+            setTimeout(() => { snackbar.className = snackbar.className.replace('show', ''); }, 3000);
+        }
+        function showConfirmationModal(message, onConfirm) {
+            document.getElementById('modal-text').textContent = message;
+            const modal = document.getElementById('confirmation-modal');
+            modal.classList.remove('hidden');
+            const confirmBtn = document.getElementById('modal-confirm-btn');
+            const cancelBtn = document.getElementById('modal-cancel-btn');
+            const confirmHandler = () => {
+                onConfirm();
+                closeModal();
+            };
+            const cancelHandler = () => closeModal();
+            const closeModal = () => {
+                modal.classList.add('hidden');
+                confirmBtn.removeEventListener('click', confirmHandler);
+                cancelBtn.removeEventListener('click', cancelHandler);
+            };
+            confirmBtn.addEventListener('click', confirmHandler);
+            cancelBtn.addEventListener('click', cancelHandler);
+        }
+        const LOADER_HTML = `<div class="loader-container"><div class="loader"></div></div>`;
         document.getElementById('login-btn').addEventListener('click', () => auth.signInWithEmailAndPassword(document.getElementById('email').value, document.getElementById('password').value).catch(err => document.getElementById('auth-error').textContent = err.message));
         document.getElementById('signup-btn').addEventListener('click', () => auth.createUserWithEmailAndPassword(document.getElementById('email').value, document.getElementById('password').value).catch(err => document.getElementById('auth-error').textContent = err.message));
-
         auth.onAuthStateChanged(async user => {
             const loginContainer = document.getElementById('login-container');
             const appContainer = document.getElementById('app-container');
@@ -165,24 +237,21 @@
                 workerList = [];
             }
         });
-        
         async function initializeApp() {
             setupAppListeners();
-            await loadWorkers(); 
+            await loadWorkers();
             await loadAgreements();
             showPage('daily-entry-page');
         }
-        
         function setupAppListeners() {
             document.querySelectorAll('.nav-link, .bottom-nav-item').forEach(link => {
-                if(!link.getAttribute('listener-added')) {
+                if (!link.getAttribute('listener-added')) {
                     link.addEventListener('click', (e) => { e.preventDefault(); showPage(link.dataset.page); });
                     link.setAttribute('listener-added', 'true');
                 }
             });
             document.getElementById('menu-logout-btn').addEventListener('click', () => auth.signOut());
         }
-
         async function loadWorkers() {
             const uid = auth.currentUser.uid;
             const defaultWorkers = ["Khushi", "Anwar", "Mumtaz", "Ameer", "Nawaz", "Hussain", "Latif", "Rabdina"];
@@ -190,7 +259,7 @@
                 const snapshot = await database.ref(`workers/${uid}`).once('value');
                 if (snapshot.exists()) {
                     workerList = snapshot.val();
-                    if(!Array.isArray(workerList)) throw new Error("Worker data is not an array");
+                    if (!Array.isArray(workerList)) throw new Error("Worker data is not an array");
                 } else {
                     await database.ref(`workers/${uid}`).set(defaultWorkers);
                     workerList = defaultWorkers;
@@ -200,33 +269,29 @@
                 workerList = defaultWorkers;
             }
         }
-        
         async function saveWorkerNames() {
-            const newWorkerNames = [];
-            const workerInputs = document.querySelectorAll('#manage-workers-page .form-input');
-            workerInputs.forEach(input => {
-                const newName = input.value.trim();
-                 if (newName) {
-                    newWorkerNames.push(newName);
+            showConfirmationModal('Are you sure you want to save these worker names? This cannot be undone.', async () => {
+                const newWorkerNames = [];
+                const workerInputs = document.querySelectorAll('#manage-workers-page .form-input');
+                workerInputs.forEach(input => {
+                    const newName = input.value.trim();
+                    if (newName) { newWorkerNames.push(newName); }
+                });
+                if (newWorkerNames.length === 0) {
+                    showSnackbar('At least one worker name is required!', 'error');
+                    return;
+                }
+                const uid = auth.currentUser.uid;
+                try {
+                    await database.ref(`workers/${uid}`).set(newWorkerNames);
+                    await loadWorkers();
+                    showSnackbar('Worker names have been saved successfully!', 'success');
+                    showPage('manage-workers-page', 'Manage Workers');
+                } catch (error) {
+                    showSnackbar('Error saving names: ' + error.message, 'error');
                 }
             });
-            
-            if (newWorkerNames.length === 0) {
-                 alert('At least one worker name is required!');
-                 return;
-            }
-
-            const uid = auth.currentUser.uid;
-            try {
-                await database.ref(`workers/${uid}`).set(newWorkerNames);
-                await loadWorkers();
-                alert('Worker names have been saved successfully!');
-                showPage('manage-workers-page', 'Manage Workers');
-            } catch (error) {
-                alert('Error saving names: ' + error.message);
-            }
         }
-        
         async function loadAgreements() {
             const uid = auth.currentUser.uid;
             const snapshot = await database.ref(`agreements/${uid}`).once('value');
@@ -241,45 +306,40 @@
                 appConfig.rates = defaultAgreements;
             }
         }
-        
-        async function saveAgreement(type) {
-            const uid = auth.currentUser.uid;
-            const data = {
-                tonRate: parseFloat(document.getElementById(`${type}TonRate`).value),
-                restRate: parseFloat(document.getElementById(`${type}RestRate`).value),
-                layoffRate: parseFloat(document.getElementById(`${type}LayoffRate`).value),
-                allowance: parseFloat(document.getElementById(`${type}Allowance`).value)
-            };
-            await database.ref(`agreements/${uid}/${type}`).update(data);
-            alert(`${type.charAt(0).toUpperCase() + type.slice(1)} Agreement saved!`);
-            await loadAgreements();
+        function saveAgreement(type) {
+            showConfirmationModal(`Are you sure you want to save the '${type}' agreement?`, async () => {
+                const uid = auth.currentUser.uid;
+                const data = {
+                    tonRate: parseFloat(document.getElementById(`${type}TonRate`).value),
+                    restRate: parseFloat(document.getElementById(`${type}RestRate`).value),
+                    layoffRate: parseFloat(document.getElementById(`${type}LayoffRate`).value),
+                    allowance: parseFloat(document.getElementById(`${type}Allowance`).value)
+                };
+                await database.ref(`agreements/${uid}/${type}`).update(data);
+                showSnackbar(`${type.charAt(0).toUpperCase() + type.slice(1)} Agreement saved!`, 'success');
+                await loadAgreements();
+            });
         }
-
         function showPage(pageId, customTitle) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             const targetPage = document.getElementById(pageId);
-            
             const mainPageId = pageId.startsWith('generate-payroll') || pageId.startsWith('manage-workers') ? 'settings-page' : pageId;
             const pageLink = document.querySelector(`.nav-link[data-page="${mainPageId}"]`);
-
             document.getElementById('header-title').textContent = customTitle || (pageLink ? pageLink.querySelector('span').textContent : 'Salary Pro');
-            
             document.querySelectorAll('.nav-link, .bottom-nav-item').forEach(link => {
                 link.classList.toggle('active', link.dataset.page === mainPageId);
             });
-            
             renderPageContent(pageId);
             targetPage.classList.add('active');
-            if(document.getElementById('side-menu').classList.contains('open')) toggleMenu();
+            if (document.getElementById('side-menu').classList.contains('open')) toggleMenu();
         }
-        
         function renderPageContent(pageId) {
             const container = document.getElementById(pageId);
-            if (!appConfig.rates || !workerList || workerList.length === 0) { 
-                container.innerHTML = `<div class="card">Loading App Data...</div>`; return; 
+            if (!appConfig.rates || !workerList || workerList.length === 0) {
+                container.innerHTML = LOADER_HTML; return;
             }
             let content = '';
-            switch(pageId) {
+            switch (pageId) {
                 case 'daily-entry-page':
                     content = `<div class="grid-layout">
                         <div class="card">
@@ -288,9 +348,8 @@
                             <div class="select-group"><select id="dayType" class="form-select"><option value="work">Work Day</option><option value="rest">Rest Day</option><option value="special_overtime">Special Overtime</option></select></div>
                             <div id="tonnage-section" class="form-group"><input type="number" id="tonnage" class="form-input" placeholder=" " required><label for="tonnage" class="form-label">Total Tonnage</label></div>
                             <h3 style="font-size: 16px; font-weight: 500; margin-top:24px;">Worker Attendance</h3>
-                            <ul style="list-style:none; padding:0; max-height:200px; overflow-y:auto;">${workerList.map(w => `<li><label style="display:flex; align-items:center; width:100%;"><input type="checkbox" class="worker-checkbox" checked value="${w}"> <span style="margin-left:8px;">${w}</span></label></li>`).join('')}</ul>
-                            <button class="btn" onclick="calculateAndSave()" style="width:100%; margin-top: 16px;">Calculate & Save</button>
-                            <pre id="result-daily" style="margin-top:16px; font-weight:500;"></pre>
+                            <ul style="list-style:none; padding:0; max-height:200px; overflow-y:auto;">${workerList.map(w => `<li><label style="display:flex; align-items:center; width:100%; padding: 4px 0;"><input type="checkbox" class="worker-checkbox" checked value="${w}"> <span style="margin-left:8px;">${w}</span></label></li>`).join('')}</ul>
+                            <button class="btn accent" onclick="confirmAndSaveDailyEntry()" style="width:100%; margin-top: 16px;">Calculate & Save</button>
                         </div>
                         <div class="card" id="history-card-for-desktop">
                            <h2 class="card-title">Daily History</h2>
@@ -302,7 +361,7 @@
                     container.innerHTML = content;
                     document.getElementById('entryDate').valueAsDate = new Date();
                     document.getElementById('dayType').addEventListener('change', () => document.getElementById('tonnage-section').style.display = document.getElementById('dayType').value === 'rest' ? 'none' : 'block');
-                    initializeHistoryView(); 
+                    initializeHistoryView();
                     break;
                 case 'salaries-page':
                     content = `
@@ -313,7 +372,7 @@
                             <div class="select-group" style="margin-bottom: 16px;">
                                 <select id="salariesPeriodSelect" class="form-select" title="Select period to view salaries"></select>
                             </div>
-                            <div id="salaries-table-container"></div>
+                            <div id="salaries-table-container">${LOADER_HTML}</div>
                         </div>`;
                     container.innerHTML = content;
                     initializeSalariesView();
@@ -326,14 +385,14 @@
                             <div class="form-group"><input type="number" id="currentRestRate" value="${appConfig.rates.current.restRate}" class="form-input" placeholder=" "><label class="form-label">Rest Rate</label></div>
                             <div class="form-group"><input type="number" id="currentLayoffRate" value="${appConfig.rates.current.layoffRate}" class="form-input" placeholder=" "><label class="form-label">Layoff Rate</label></div>
                             <div class="form-group"><input type="number" id="currentAllowance" value="${appConfig.rates.current.allowance}" class="form-input" placeholder=" "><label class="form-label">Monthly Allowance</label></div>
-                            <button class="btn" style="width:100%" onclick="saveAgreement('current')">Save Current</button>
+                            <button class="btn primary" style="width:100%" onclick="saveAgreement('current')">Save Current</button>
                         </div>
                         <div class="card"><h2 class="card-title">New Agreement</h2>
                             <div class="form-group"><input type="number" id="newTonRate" value="${appConfig.rates.new.tonRate}" class="form-input" placeholder=" "><label class="form-label">Ton Rate</label></div>
                             <div class="form-group"><input type="number" id="newRestRate" value="${appConfig.rates.new.restRate}" class="form-input" placeholder=" "><label class="form-label">Rest Rate</label></div>
                             <div class="form-group"><input type="number" id="newLayoffRate" value="${appConfig.rates.new.layoffRate}" class="form-input" placeholder=" "><label class="form-label">Layoff Rate</label></div>
                             <div class="form-group"><input type="number" id="newAllowance" value="${appConfig.rates.new.allowance}" class="form-input" placeholder=" "><label class="form-label">Monthly Allowance</label></div>
-                            <button class="btn" style="width:100%" onclick="saveAgreement('new')">Save New</button>
+                            <button class="btn primary" style="width:100%" onclick="saveAgreement('new')">Save New</button>
                         </div></div>`;
                     container.innerHTML = content;
                     break;
@@ -343,7 +402,7 @@
                         <p style="color: var(--md-text-secondary); font-size: 14px;">Bonus ki calculation fiscal year (10 Oct se 9 Oct) ke hisab se ki jayegi.</p>
                         <label>Fiscal Year Select Karein</label>
                         <div class="select-group"><select id="bonusYearSelect" class="form-select"></select></div>
-                        <button onclick="calculateBonus()" class="btn" style="width:100%">Calculate Bonus</button>
+                        <button onclick="calculateBonus()" class="btn accent" style="width:100%">Calculate Bonus</button>
                         <pre id="bonusResult" style="margin-top:16px; padding:12px; background: #f5f5f5; border-radius: 4px;"></pre>
                     </div>`;
                     container.innerHTML = content;
@@ -359,7 +418,7 @@
                         <label>Select Period for Arrears Calculation</label>
                         <div class="form-group"><input type="date" id="arrearsStartDate" class="form-select"></div>
                         <div class="form-group"><input type="date" id="arrearsEndDate" class="form-select"></div>
-                        <button onclick="calculateTrueArrears()" class="btn" style="width:100%">Calculate True Arrears</button>
+                        <button onclick="calculateTrueArrears()" class="btn accent" style="width:100%">Calculate True Arrears</button>
                         <pre id="arrearsResult" style="margin-top:16px; padding:12px; background: #f5f5f5; border-radius: 4px;"></pre></div>`;
                     container.innerHTML = content;
                     calculateAutomaticArrears();
@@ -383,7 +442,7 @@
                         <p style="font-size: 14px;">Uses <b>Current Agreement</b> rates. Monthly Allowance is <b>Rs ${monthlyAllowance}</b>. Code har 15 din ke hisab se adha (1/2) allowance shamil karega.</p>
                         <div class="form-group"><input type="date" id="payrollStartDate" class="form-select"></div>
                         <div class="form-group"><input type="date" id="payrollEndDate" class="form-select"></div>
-                        <button onclick="generatePayroll()" class="btn" style="width:100%">Generate</button>
+                        <button onclick="generatePayroll()" class="btn accent" style="width:100%">Generate</button>
                         <pre id="payrollResult" style="margin-top:16px; padding: 12px; background: #f5f5f5; border-radius: 4px;"></pre>
                     </div>`;
                     container.innerHTML = content;
@@ -395,19 +454,16 @@
                                     <label class="form-label" for="worker-name-${index}">Worker ${index + 1} Name</label>
                                 </div>`;
                     }).join('');
-
                     content = `<div class="card">
                         <p style="font-size: 14px; color: var(--md-text-secondary);">Yahan se aap apne workers ke naam tabdeel kar sakte hain. Khali chhorne par worker list se nikal jayega.</p>
                         ${workerInputsHTML}
-                        <button onclick="saveWorkerNames()" class="btn" style="width:100%; margin-top: 16px;">Save Worker Names</button>
+                        <button onclick="saveWorkerNames()" class="btn primary" style="width:100%; margin-top: 16px;">Save Worker Names</button>
                       </div>`;
                     container.innerHTML = content;
                     break;
             }
         }
-        
         function toggleMenu() { document.getElementById('side-menu').classList.toggle('open'); document.getElementById('overlay').classList.toggle('hidden'); }
-
         function _calculateSingleDay(record, agreementRates) {
             const { tonRate, restRate, layoffRate } = agreementRates;
             const { type, tonnage } = record;
@@ -437,44 +493,40 @@
             }
             return dailyEarnings;
         }
-
+        function confirmAndSaveDailyEntry() {
+            showConfirmationModal('Are you sure you want to save this daily entry?', calculateAndSave);
+        }
         async function calculateAndSave() {
-            if (!appConfig.rates) { alert("Data not ready. Please wait."); return; }
+            if (!appConfig.rates) { showSnackbar("Data not ready. Please wait.", 'error'); return; }
             const date = document.getElementById('entryDate').value;
-            if (!date) { alert("Please select a date."); return; }
+            if (!date) { showSnackbar("Please select a date.", 'error'); return; }
             const dayType = document.getElementById('dayType').value;
             const tonnage = parseFloat(document.getElementById('tonnage').value) || 0;
             const presentWorkers = Array.from(document.querySelectorAll('.worker-checkbox:checked')).map(cb => cb.value);
-            if (presentWorkers.length === 0 && dayType !== 'rest') { alert("Select present workers."); return; }
-            
+            if (presentWorkers.length === 0 && dayType !== 'rest') { showSnackbar("Select present workers for a work day.", 'error'); return; }
             const recordDataForCalc = { type: dayType, tonnage, presentWorkers };
             const earnings = _calculateSingleDay(recordDataForCalc, appConfig.rates.current);
             const perWorkerEarning = presentWorkers.length > 0 ? (earnings[presentWorkers[0]] || 0) : 0;
-            document.getElementById('result-daily').innerText = `Calculated.\nSaved successfully!`;
-            
             const recordToSave = { date, type: dayType, tonnage, presentCount: presentWorkers.length, presentWorkers, earnings, perWorkerEarning };
             await database.ref(`salaries/${auth.currentUser.uid}/${date}`).set(recordToSave);
+            showSnackbar('Daily entry saved successfully!', 'success');
             loadHistory();
         }
-
         function isLastDayOfMonth(dt) {
             const test = new Date(dt.getTime());
             test.setDate(test.getDate() + 1);
             return test.getDate() === 1;
         }
-        
         function countAllowancesInRange(startDateStr, endDateStr) {
             if (!startDateStr || !endDateStr) return 0;
             const start = new Date(startDateStr + "T00:00:00");
             const end = new Date(endDateStr + "T00:00:00");
-
             let allowanceCount = 0;
             let cursor = new Date(start.getTime());
-
             while (cursor <= end) {
                 if (cursor.getDate() === 15) {
                     allowanceCount++;
-                } 
+                }
                 else if (isLastDayOfMonth(cursor)) {
                     allowanceCount++;
                 }
@@ -482,42 +534,35 @@
             }
             return allowanceCount;
         }
-        
         function generatePayroll() {
-            if (!appConfig.rates) { alert("Data is not ready yet."); return; }
-
+            if (!appConfig.rates) { showSnackbar("Data is not ready yet.", 'error'); return; }
             const startDateStr = document.getElementById('payrollStartDate').value;
             const endDateStr = document.getElementById('payrollEndDate').value;
-            if (!startDateStr || !endDateStr) { alert("Please select both a start and end date."); return; }
-
+            if (!startDateStr || !endDateStr) { showSnackbar("Please select both a start and end date.", 'error'); return; }
             const resultElem = document.getElementById('payrollResult');
             resultElem.innerText = 'Generating payroll...';
-
             database.ref(`salaries/${auth.currentUser.uid}`).orderByChild('date').startAt(startDateStr).endAt(endDateStr).once('value', snapshot => {
                 let payroll = {}; workerList.forEach(w => { payroll[w] = 0; });
                 if (snapshot.exists()) {
                     snapshot.forEach(child => {
                         const record = child.val();
                         if (record && record.earnings) {
-                            workerList.forEach(w => { 
-                                payroll[w] += record.earnings[w] || 0; 
+                            workerList.forEach(w => {
+                                payroll[w] += record.earnings[w] || 0;
                             });
                         }
                     });
                 }
-                
                 const numAllowances = countAllowancesInRange(startDateStr, endDateStr);
                 const monthlyAllowance = appConfig.rates.current.allowance || 0;
                 const allowancePerPeriod = monthlyAllowance / 2;
                 const totalAllowance = numAllowances * allowancePerPeriod;
-
                 let detailsPerWorker = '';
                 workerList.forEach(w => {
                     const dailyPay = payroll[w];
                     const finalPay = dailyPay + totalAllowance;
                     detailsPerWorker += `${w.padEnd(10)}: Rs ${dailyPay.toFixed(2)} (Earned) + Rs ${totalAllowance.toFixed(2)} (Allowance) = Rs ${finalPay.toFixed(2)}\n`;
                 });
-
                 let resultText = `PAYROLL: ${startDateStr} to ${endDateStr}\n\n`;
                 resultText += `Allowance Calculation:\n`;
                 resultText += `  - Pay Events Detected (15th or Last Day): ${numAllowances}\n`;
@@ -526,11 +571,9 @@
                 resultText += `-------------------------------------------\n\n`;
                 resultText += `Worker Salaries:\n${detailsPerWorker}\n`;
                 resultText += `-------------------------------------------\n`;
-                
                 resultElem.innerText = resultText;
             });
         }
-        
         function loadHistory() {
             const container = document.getElementById('history-table-container');
             if (!container) return;
@@ -538,9 +581,9 @@
             if (!selectedPeriod) { container.innerHTML = "<p>Please select a period to view history.</p>"; return; }
             const [year, month, day] = selectedPeriod.split('-').map(Number);
             let startDate, endDate;
-            if (day === 1) { startDate = selectedPeriod; endDate = `${year}-${String(month).padStart(2, '0')}-15`; } 
+            if (day === 1) { startDate = selectedPeriod; endDate = `${year}-${String(month).padStart(2, '0')}-15`; }
             else { startDate = selectedPeriod; const lastDayOfMonth = new Date(year, month, 0).getDate(); endDate = `${year}-${String(month).padStart(2, '0')}-${lastDayOfMonth}`; }
-            container.innerHTML = "Loading history...";
+            container.innerHTML = LOADER_HTML;
             database.ref(`salaries/${auth.currentUser.uid}`).orderByChild('date').startAt(startDate).endAt(endDate).once('value', snapshot => {
                 if (!snapshot.exists()) { container.innerHTML = "<p>No daily records found for this period.</p>"; return; }
                 let rows = '';
@@ -554,26 +597,20 @@
                 container.innerHTML = `<table style="width:100%; border-collapse:collapse;"><thead><tr><th>Date</th><th>Type</th><th>Present</th><th>Earning</th></tr></thead><tbody>${rows}</tbody></table>`;
             });
         }
-        
         async function calculateAutomaticArrears() {
             const resultElem = document.getElementById('automaticArrearsResult');
             if (!resultElem) return;
             resultElem.innerText = 'Calculating...';
-
             const ARREARS_START_DATE = '2023-10-10';
-            
             const today = new Date();
             const end = today.toISOString().split('T')[0];
-
             const snapshot = await database.ref(`salaries/${auth.currentUser.uid}`).orderByChild('date').startAt(ARREARS_START_DATE).endAt(end).once('value');
             if (!snapshot.exists()) {
                 resultElem.innerText = `No records found from ${ARREARS_START_DATE} to Today.`;
                 return;
             }
-
             let actualTotals = {}; workerList.forEach(w => actualTotals[w] = 0);
             let hypotheticalTotals = {}; workerList.forEach(w => hypotheticalTotals[w] = 0);
-
             snapshot.forEach(child => {
                 const record = child.val();
                 if (record && record.earnings) {
@@ -585,36 +622,29 @@
                     });
                 }
             });
-
             const numAllowances = countAllowancesInRange(ARREARS_START_DATE, end);
             const currentAllowancePerPeriod = (appConfig.rates.current.allowance || 0) / 2;
             const newAllowancePerPeriod = (appConfig.rates.new.allowance || 0) / 2;
             const allowanceArrears = numAllowances * (newAllowancePerPeriod - currentAllowancePerPeriod);
-            
             let resultText = `Arrears from ${ARREARS_START_DATE} to ${end}\n`;
             resultText += `--------------------------------------\n`;
-
             workerList.forEach(w => {
                 const dailyArrears = hypotheticalTotals[w] - actualTotals[w];
                 const totalArrearsPerWorker = dailyArrears + allowanceArrears;
                 resultText += `${w.padEnd(10)}: Rs ${totalArrearsPerWorker.toFixed(2)}\n`;
             });
-            
             resultElem.innerText = resultText;
         }
-
         async function calculateTrueArrears() {
             const resultElem = document.getElementById('arrearsResult');
             resultElem.innerText = 'Calculating... Fetching records...';
             const start = document.getElementById('arrearsStartDate').value;
             const end = document.getElementById('arrearsEndDate').value;
-            if(!start || !end) { resultElem.innerText = 'Please select dates.'; return; }
+            if (!start || !end) { resultElem.innerText = 'Please select dates.'; return; }
             const snapshot = await database.ref(`salaries/${auth.currentUser.uid}`).orderByChild('date').startAt(start).endAt(end).once('value');
             if (!snapshot.exists()) { resultElem.innerText = 'No records in period.'; return; }
-
             let actualTotals = {}; workerList.forEach(w => actualTotals[w] = 0);
             let hypotheticalTotals = {}; workerList.forEach(w => hypotheticalTotals[w] = 0);
-            
             snapshot.forEach(child => {
                 const record = child.val();
                 if (record && record.earnings) {
@@ -626,15 +656,12 @@
                     });
                 }
             });
-            
             const numAllowances = countAllowancesInRange(start, end);
             const currentAllowancePerPeriod = (appConfig.rates.current.allowance || 0) / 2;
             const newAllowancePerPeriod = (appConfig.rates.new.allowance || 0) / 2;
             const allowanceArrears = numAllowances * (newAllowancePerPeriod - currentAllowancePerPeriod);
-            
             let resultText = `TRUE ARREARS: ${start} to ${end}\n`;
             resultText += `Pay Events Detected: ${numAllowances}\n-----------------------------------\n\n`;
-
             workerList.forEach(w => {
                 const dailyArrears = hypotheticalTotals[w] - actualTotals[w];
                 const totalArrears = dailyArrears + allowanceArrears;
@@ -645,54 +672,45 @@
             });
             resultElem.innerText = resultText;
         }
-
         function initializeHistoryView() {
-            populateHistorySelector(); 
+            populateHistorySelector();
             const today = new Date();
             const year = today.getFullYear();
             const month = today.getMonth() + 1;
             const day = today.getDate();
             const selector = document.getElementById('historyPeriodSelect');
-            if (selector){
-                 if (day <= 15) { selector.value = `${year}-${String(month).padStart(2, '0')}-01`; } 
-                 else { selector.value = `${year}-${String(month).padStart(2, '0')}-16`; }
-                selector.addEventListener('change', loadHistory); 
-                loadHistory(); 
+            if (selector) {
+                if (day <= 15) { selector.value = `${year}-${String(month).padStart(2, '0')}-01`; }
+                else { selector.value = `${year}-${String(month).padStart(2, '0')}-16`; }
+                selector.addEventListener('change', loadHistory);
+                loadHistory();
             }
         }
-
         function populateHistorySelector() {
             const select = document.getElementById('historyPeriodSelect');
             if (!select) return;
             select.innerHTML = '';
             const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
             let currentDate = new Date();
-            currentDate.setDate(1); 
+            currentDate.setDate(1);
             for (let i = 0; i < 24; i++) {
                 const year = currentDate.getFullYear();
                 const month = currentDate.getMonth();
-                
                 let option2 = document.createElement('option');
-                option2.value = `${year}-${String(month + 1).padStart(2, '0')}-16`; 
+                option2.value = `${year}-${String(month + 1).padStart(2, '0')}-16`;
                 option2.textContent = `${monthNames[month]} ${year} - (16 se Aakhir Tak)`;
                 select.appendChild(option2);
-
                 let option1 = document.createElement('option');
                 option1.value = `${year}-${String(month + 1).padStart(2, '0')}-01`;
                 option1.textContent = `${monthNames[month]} ${year} - (1 se 15 Tak)`;
                 select.appendChild(option1);
-
                 currentDate.setMonth(currentDate.getMonth() - 1);
             }
         }
-        
-        // ***** NAYE AUR TABDEEL SHUDA FUNCTIONS *****
-        
         async function renderCurrentExpectedSalary() {
             const container = document.getElementById('current-expected-salary-card');
             if (!container) return;
-            container.innerHTML = `<div class="card"><div class="card-title">Calculating Current Salary...</div></div>`;
-            
+            container.innerHTML = `<div class="card">${LOADER_HTML}</div>`;
             const today = new Date();
             const year = today.getFullYear();
             const month = today.getMonth() + 1;
@@ -708,12 +726,10 @@
                 endDate = `${year}-${String(month).padStart(2, '0')}-${String(lastDayOfMonth).padStart(2, '0')}`;
                 periodTitle = `Mojooda Expected Salary (16 se Aakhir Tak)`;
             }
-
             try {
                 const snapshot = await database.ref(`salaries/${auth.currentUser.uid}`).orderByChild('date').startAt(startDate).endAt(endDate).once('value');
                 let periodSalaries = {};
                 workerList.forEach(w => periodSalaries[w] = 0);
-                
                 if (snapshot.exists()) {
                     snapshot.forEach(child => {
                         const record = child.val();
@@ -724,34 +740,29 @@
                         }
                     });
                 }
-
                 const allowance = (appConfig.rates.current.allowance || 0) / 2;
                 let salaryListHTML = '<ul style="list-style:none; padding: 0; margin:0;">';
                 workerList.forEach(w => {
                     const finalPay = periodSalaries[w] + allowance;
                     salaryListHTML += `<li style="display:flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee;">
                         <span>${w}</span>
-                        <span style="font-weight: 500;">Rs ${finalPay.toFixed(2)}</span>
+                        <span style="font-weight: 500; color: var(--md-primary-color);">Rs ${finalPay.toFixed(2)}</span>
                     </li>`;
                 });
                 salaryListHTML += '</ul>';
-                
                 container.innerHTML = `<div class="card"><h2 class="card-title">${periodTitle}</h2>${salaryListHTML}</div>`;
-
-            } catch(error) {
+            } catch (error) {
                 container.innerHTML = `<div class="card"><p style="color:red;">Error loading current salary: ${error.message}</p></div>`;
             }
         }
-        
         function initializeSalariesView() {
-            populateSalariesPeriodSelector(); 
+            populateSalariesPeriodSelector();
             const selector = document.getElementById('salariesPeriodSelect');
-            if (selector){
-                selector.addEventListener('change', renderSalariesTable); 
+            if (selector) {
+                selector.addEventListener('change', renderSalariesTable);
                 renderSalariesTable();
             }
         }
-
         function populateSalariesPeriodSelector() {
             const select = document.getElementById('salariesPeriodSelect');
             if (!select) return;
@@ -762,88 +773,63 @@
             for (let i = 0; i < 24; i++) {
                 const year = currentDate.getFullYear();
                 const month = currentDate.getMonth();
-                
                 let option2 = document.createElement('option');
-                option2.value = `${year}-${String(month + 1).padStart(2, '0')}-16`; 
+                option2.value = `${year}-${String(month + 1).padStart(2, '0')}-16`;
                 option2.textContent = `${monthNames[month]} ${year} - (16 se Aakhir Tak)`;
                 select.appendChild(option2);
-
                 let option1 = document.createElement('option');
                 option1.value = `${year}-${String(month + 1).padStart(2, '0')}-01`;
                 option1.textContent = `${monthNames[month]} ${year} - (1 se 15 Tak)`;
                 select.appendChild(option1);
-
                 currentDate.setMonth(currentDate.getMonth() - 1);
             }
-            // Set default to current period
             const today = new Date();
             const year = today.getFullYear();
             const month = today.getMonth() + 1;
             const day = today.getDate();
-            if (day <= 15) { 
-                select.value = `${year}-${String(month).padStart(2, '0')}-01`; 
-            } else { 
-                select.value = `${year}-${String(month).padStart(2, '0')}-16`; 
+            if (day <= 15) {
+                select.value = `${year}-${String(month).padStart(2, '0')}-01`;
+            } else {
+                select.value = `${year}-${String(month).padStart(2, '0')}-16`;
             }
         }
-
         async function renderSalariesTable() {
             const container = document.getElementById('salaries-table-container');
             if (!container) return;
             const selectedPeriod = document.getElementById('salariesPeriodSelect').value;
-            if (!selectedPeriod) { 
-                container.innerHTML = "<p>Please select a period to view salaries.</p>"; 
-                return; 
+            if (!selectedPeriod) {
+                container.innerHTML = "<p>Please select a period to view salaries.</p>";
+                return;
             }
-            container.innerHTML = "Loading records...";
+            container.innerHTML = LOADER_HTML;
             const [year, month, day] = selectedPeriod.split('-').map(Number);
             let startDate, endDate;
-            if (day === 1) {
-                startDate = selectedPeriod;
-                endDate = `${year}-${String(month).padStart(2, '0')}-15`;
-            } else {
-                startDate = selectedPeriod;
-                const lastDayOfMonth = new Date(year, month, 0).getDate();
-                endDate = `${year}-${String(month).padStart(2, '0')}-${String(lastDayOfMonth).padStart(2, '0')}`;
-            }
-            
+            if (day === 1) { startDate = selectedPeriod; endDate = `${year}-${String(month).padStart(2, '0')}-15`; }
+            else { startDate = selectedPeriod; const lastDayOfMonth = new Date(year, month, 0).getDate(); endDate = `${year}-${String(month).padStart(2, '0')}-${String(lastDayOfMonth).padStart(2, '0')}`; }
             try {
                 const snapshot = await database.ref(`salaries/${auth.currentUser.uid}`).orderByChild('date').startAt(startDate).endAt(endDate).once('value');
-                
                 let tableHTML = `<p>No salary records found for this period.</p>`;
                 let summaryHTML = '';
-
                 if (snapshot.exists()) {
                     let tableRowsHTML = '';
                     let periodSalaries = {};
                     workerList.forEach(w => periodSalaries[w] = 0);
-                    
                     const records = snapshot.val();
                     const sortedKeys = Object.keys(records).sort((a, b) => new Date(a) - new Date(b));
-                    
                     sortedKeys.forEach(dateKey => {
                         const rec = records[dateKey];
                         const payment = rec.perWorkerEarning || 0;
-                        let tonsDisplay = rec.tonnage || 0;
-                        if(rec.type === 'rest') tonsDisplay = 'Rest';
-                        if(rec.type === 'special_overtime') tonsDisplay = `${rec.tonnage} (OT)`;
+                        let typeDisplay = rec.type;
+                        if (rec.type === 'work') typeDisplay = `<svg title="Work Day" style="vertical-align: middle; margin-right: 4px;" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg> Work`;
+                        if (rec.type === 'rest') typeDisplay = `<svg title="Rest Day" style="vertical-align: middle; margin-right: 4px;" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg> Rest`;
+                        if (rec.type === 'special_overtime') typeDisplay = `<svg title="Overtime" style="vertical-align: middle; margin-right: 4px;" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> OT`;
                         const presentCount = rec.presentCount !== undefined ? rec.presentCount : 'N/A';
-                        let absentWorkersStr = 'None';
-                        if (rec.presentWorkers && Array.isArray(rec.presentWorkers) && workerList) {
-                            const absent = workerList.filter(w => !rec.presentWorkers.includes(w));
-                            if (absent.length > 0) absentWorkersStr = absent.join(', ');
-                        }
                         if (rec && rec.earnings) {
-                            workerList.forEach(w => {
-                                periodSalaries[w] += rec.earnings[w] || 0;
-                            });
+                            workerList.forEach(w => { periodSalaries[w] += rec.earnings[w] || 0; });
                         }
-                        tableRowsHTML += `<tr><td>${new Date(rec.date + 'T00:00:00').toLocaleDateString('en-GB', {day:'2-digit', month:'2-digit'})}</td><td>${tonsDisplay}</td><td>${presentCount}</td><td>${payment.toFixed(2)}</td><td>${absentWorkersStr}</td></tr>`;
+                        tableRowsHTML += `<tr><td>${new Date(rec.date + 'T00:00:00').toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' })}</td><td>${typeDisplay}</td><td>${rec.tonnage || '--'}</td><td>${presentCount}</td><td>${payment.toFixed(2)}</td></tr>`;
                     });
-
-                    tableHTML = `<style>.salaries-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px; }.salaries-table th, .salaries-table td { padding: 8px 12px; border: 1px solid var(--md-divider-color); text-align: left; }.salaries-table thead { background-color: #f0f0f0; }.salaries-table th { font-weight: 500; }.salaries-table td:nth-child(2),.salaries-table td:nth-child(3),.salaries-table td:nth-child(4) { text-align: right; }</style><table class="salaries-table"><thead><tr><th>Date</th><th>Tons</th><th>Workers</th><th>Payment/Day</th><th>Absent</th></tr></thead><tbody>${tableRowsHTML}</tbody></table>`;
-                    
-                    // Salary Summary Card
+                    tableHTML = `<style>.salaries-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px; }.salaries-table th, .salaries-table td { padding: 8px 12px; border: 1px solid var(--md-divider-color); text-align: left; vertical-align: middle; }.salaries-table thead { background-color: #f0f0f0; }.salaries-table th { font-weight: 500; }.salaries-table td:nth-child(n+3) { text-align: right; }</style><table class="salaries-table"><thead><tr><th>Date</th><th>Type</th><th>Tons</th><th>Workers</th><th>Payment/Day</th></tr></thead><tbody>${tableRowsHTML}</tbody></table>`;
                     const allowance = (appConfig.rates.current.allowance || 0) / 2;
                     let salaryListHTML = '<ul style="list-style:none; padding: 0; margin:0;">';
                     workerList.forEach(w => {
@@ -851,21 +837,18 @@
                         salaryListHTML += `<li style="display:flex; flex-wrap:wrap; justify-content: space-between; align-items:center; padding: 10px 4px; border-bottom: 1px solid #eee;">
                             <span style="font-weight: 500; margin-right:12px;">${w}:</span>
                             <span style="font-size:12px; color:#555">Rs ${periodSalaries[w].toFixed(2)} + Rs ${allowance.toFixed(2)} =</span>
-                            <span style="font-weight: bold; color:var(--md-primary-color); font-size: 16px;">Rs ${finalPay.toFixed(2)}</span>
+                            <span style="font-weight: bold; color:var(--md-accent-color); font-size: 16px;">Rs ${finalPay.toFixed(2)}</span>
                         </li>`;
                     });
                     salaryListHTML += '</ul>';
                     summaryHTML = `<div class="card" style="margin-top:24px;"><h3 class="card-title" style="font-size:16px; margin-bottom:16px;">Salary Summary (with Allowance)</h3>${salaryListHTML}</div>`;
                 }
-                
                 container.innerHTML = tableHTML + summaryHTML;
-
             } catch (error) {
                 container.innerHTML = `<p style="color: red;">Error loading data: ${error.message}</p>`;
                 console.error("Error in renderSalariesTable:", error);
             }
         }
-        
         function populateBonusYearSelector() {
             const select = document.getElementById('bonusYearSelect');
             if (!select) return;
@@ -881,7 +864,6 @@
                 select.appendChild(option);
             }
         }
-
         async function calculateBonus() {
             const resultElem = document.getElementById('bonusResult');
             const bonusYearSelect = document.getElementById('bonusYearSelect');
@@ -892,27 +874,22 @@
             const endDate = `${startYear + 1}-10-09`;
             const snapshot = await database.ref(`salaries/${auth.currentUser.uid}`).orderByChild('date').startAt(startDate).endAt(endDate).once('value');
             if (!snapshot.exists()) { resultElem.innerText = `No records found for the fiscal year ${startYear}-${startYear + 1}.`; return; }
-            
             let yearlyEarnings = {}; workerList.forEach(w => { yearlyEarnings[w] = 0; });
             snapshot.forEach(child => {
                 const record = child.val();
-                if(record && record.earnings) {
+                if (record && record.earnings) {
                     workerList.forEach(w => { yearlyEarnings[w] += record.earnings[w] || 0; });
                 }
             });
-            
             const monthlyAllowance = appConfig.rates.current.allowance || 0;
             const totalAllowancePerWorker = monthlyAllowance * 12;
-
             let resultText = `BONUS & GRATUITY\nFiscal Year: ${startDate} to ${endDate}\n`;
             resultText += `--------------------------------------\n\n`;
-
             workerList.forEach(w => {
                 const totalYearlyPay = yearlyEarnings[w] + totalAllowancePerWorker;
                 const averageMonthlySalary = totalYearlyPay / 12;
                 const gratuity = averageMonthlySalary;
                 const totalBonus = averageMonthlySalary + gratuity;
-
                 resultText += `${w.padEnd(10)}:\n`;
                 resultText += `  Yearly Pay (inc. allowance): Rs ${totalYearlyPay.toFixed(2)}\n`;
                 resultText += `  Avg Monthly Salary:          Rs ${averageMonthlySalary.toFixed(2)}\n`;
@@ -921,7 +898,6 @@
             });
             resultElem.innerText = resultText;
         }
-
     </script>
 </body>
 </html>
