@@ -24,25 +24,13 @@
     *, *::before, *::after { box-sizing: border-box; }
     body { font-family: 'Roboto', sans-serif; background-color: var(--md-background-color); color: var(--md-text-primary); margin: 0; line-height: 1.5; -webkit-font-smoothing: antialiased; }
     .hidden { display: none !important; }
-
-    /* === NAYI DESIGN TABDEELIYAN === */
     .page { display: none; animation: fadeIn 0.4s ease-in-out; }
     .page.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-    .card { 
-        background: var(--md-surface-color); padding: 24px; border-radius: 8px; 
-        box-shadow: var(--md-shadow-1); margin-bottom: 16px;
-        /* Yeh line har card ke upar ek accent border daalegi */
-        border-top: 4px solid var(--md-accent-color);
-        transition: box-shadow 0.3s ease;
-    }
+    .card { background: var(--md-surface-color); padding: 24px; border-radius: 8px; box-shadow: var(--md-shadow-1); margin-bottom: 16px; border-top: 4px solid var(--md-accent-color); transition: box-shadow 0.3s ease; }
     .card:hover { box-shadow: var(--md-shadow-2); }
     .card-title { font-size: 20px; font-weight: 500; margin: 0 0 24px 0; color: var(--md-primary-color); }
-    /* ================================== */
-
     #login-container { display: flex; justify-content: center; align-items: center; height: 100vh; padding: 16px; }
-    /* Login card par bhi border-top lagayenge */
     .login-card { border-top: 4px solid var(--md-primary-color); padding: 24px 32px; border-radius: 8px; box-shadow: var(--md-shadow-2); width: 100%; max-width: 400px; text-align: center; }
     .login-card h1 { color: var(--md-primary-color); margin-bottom: 24px; font-weight: 500; }
     #auth-error { color: var(--color-error); margin-top: 16px; font-size: 14px; min-height: 20px; }
@@ -54,18 +42,15 @@
     .form-select { width: 100%; padding: 12px; margin-bottom: 16px; border: 1px solid var(--md-divider-color); border-radius: 4px; background-color: transparent; font-size: 16px; appearance: none; }
     .select-group { position: relative; }
     .select-group::after { content: '▼'; position: absolute; top: 12px; right: 12px; color: var(--md-text-secondary); pointer-events: none; }
-    
     .btn { color: white; padding: 10px 24px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500; text-transform: uppercase; box-shadow: var(--md-shadow-1); transition: box-shadow 0.2s, background-color 0.2s; }
     .btn:hover { box-shadow: var(--md-shadow-2); }
     .btn.primary { background-color: var(--md-primary-color); }
     .btn.secondary { background-color: #757575; }
     .btn.accent { background-color: var(--md-accent-color); color: white; }
-
     .settings-item { display: flex; align-items: center; padding: 16px; border-bottom: 1px solid var(--md-divider-color); cursor: pointer; }
     .settings-item:hover { background-color: var(--md-background-color); }
     .settings-item svg { margin-right: 24px; color: var(--md-text-secondary); }
     .settings-item span { font-weight: 500; font-size: 16px; }
-
     #app-container { display: flex; flex-direction: column; min-height: 100vh; }
     .top-app-bar { display: flex; align-items: center; padding: 0 8px; height: 56px; background-color: var(--md-primary-color); color: white; box-shadow: var(--md-shadow-2); position: sticky; top: 0; z-index: 1000; }
     .icon-btn { background: none; border: none; color: white; padding: 12px; border-radius: 50%; cursor: pointer; }
@@ -83,14 +68,12 @@
     .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1999; }
     main { padding: 16px; padding-bottom: 72px; flex-grow: 1; }
     .page-content { max-width: 1200px; margin: 0 auto; }
-
     .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 56px; background: var(--md-surface-color); box-shadow: 0 -1px 3px rgba(0,0,0,0.1); display: flex; z-index: 500; }
     .bottom-nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--md-text-secondary); border: none; background: none; cursor: pointer; padding: 4px 0; border-top: 3px solid transparent; transition: color 0.2s; }
     .bottom-nav-item.active { color: var(--md-accent-color); border-top-color: var(--md-accent-color); }
     .bottom-nav-item span { font-size: 12px; margin-top: 2px; }
     @media (min-width: 768px) { .bottom-nav { display: none; } }
     pre { white-space: pre-wrap; font-family: monospace; }
-    
     #snackbar { visibility: hidden; min-width: 250px; margin-left: -125px; background-color: #333; color: #fff; text-align: center; border-radius: 4px; padding: 16px; position: fixed; z-index: 3000; left: 50%; bottom: 30px; font-size: 16px; box-shadow: var(--md-shadow-2); }
     #snackbar.show { visibility: visible; -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
     #snackbar.success { background-color: var(--color-success); }
@@ -108,13 +91,7 @@
     .loader-container { display: flex; justify-content: center; align-items: center; min-height: 150px; }
     .grid-layout { display: grid; grid-template-columns: 1fr; gap: 16px; }
     @media (min-width: 960px) { .grid-layout { grid-template-columns: 1fr 1fr; } }
-    
-    /* NAYI TABDEELI: Staggered List Animation */
-.stagger-in > * {
-    opacity: 0;
-    transform: translateY(15px);
-    transition: opacity 0.4s ease-out, transform 0.4s ease-out;
-}
+    .stagger-in > * { opacity: 0; transform: translateY(15px); transition: opacity 0.4s ease-out, transform 0.4s ease-out; }
 </style>
 </head>
 <body>
@@ -181,29 +158,19 @@
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-database.js"></script>
     <script>
+        // Baraye meharbani, neeche di gayi config ko apne Firebase project ki ASAL config se badal dein
         const firebaseConfig = {
-            apiKey: "AIzaSyAya9Kjvrqrvpm7JuXU7aa_qyBrJKtjLyo",
+            apiKey: "AIzaSyAya9Kjvrqrvpm7JuXU7aa_qyBrJKtjLyo", // <== YEH KEY GHALAT HAI, ASAL KEY DAALEIN
             authDomain: "salary-d19b0.firebaseapp.com",
             databaseURL: "https://salary-d19b0-default-rtdb.asia-southeast1.firebasedatabase.app",
             projectId: "salary-d19b0",
-            storageBucket: "salary-d19b0.appspot.com",
+            storageBucket: "salary-d19b0.firebasestorage.app",
             messagingSenderId: "572149024584",
             appId: "1:572149024584:web:bbd70fc34d2ef11679d57d"
         };
+        
         firebase.initializeApp(firebaseConfig);
-        // NAYI TABDEELI: Staggered animation ke liye helper function
-function applyStaggerAnimation(containerSelector) {
-    const container = document.querySelector(containerSelector);
-    if (!container) return; // Agar container na milay to ruk jao
-
-    const items = Array.from(container.children);
-    items.forEach((item, i) => {
-        setTimeout(() => {
-            item.style.opacity = '1';
-            item.style.transform = 'translateY(0)';
-        }, 70 * i); // Har item 70ms ke waqfay se ayega
-    });
-}
+        
         const auth = firebase.auth();
         const database = firebase.database();
         let workerList = [];
@@ -292,41 +259,45 @@ function applyStaggerAnimation(containerSelector) {
             }
         }
         
-        async function saveWorkerNames() {
-            showConfirmationModal('Are you sure you want to save these worker names?', async () => {
-                const newWorkerNames = [];
-                document.querySelectorAll('#manage-workers-page .form-input').forEach(input => {
-                    const newName = input.value.trim();
-                     if (newName) newWorkerNames.push(newName);
-                });
-                if (newWorkerNames.length === 0) {
-                     showSnackbar('At least one worker name is required!', 'error');
-                     return;
-                }
-                const uid = auth.currentUser.uid;
-                try {
-                    await database.ref(`workers/${uid}`).set(newWorkerNames);
-                    await loadWorkers();
-                    showSnackbar('Worker names saved successfully!', 'success');
-                    showPage('manage-workers-page', 'Manage Workers');
-                } catch (error) {
-                    showSnackbar('Error saving names: ' + error.message, 'error');
-                }
-            });
-        }
-        
+        // ===== YEH FUNCTION THEEK KAR DIYA GAYA HAI (ALLOWANCE ERROR KE LIYE) =====
         async function loadAgreements() {
             const uid = auth.currentUser.uid;
-            const snapshot = await database.ref(`agreements/${uid}`).once('value');
-            if (snapshot.exists()) {
-                appConfig.rates = snapshot.val();
-            } else {
-                const defaultAgreements = {
-                    current: { tonRate: 22, restRate: 1100, layoffRate: 549, allowance: 20000 },
-                    new: { tonRate: 22, restRate: 1100, layoffRate: 549, allowance: 26000 }
-                };
-                await database.ref(`agreements/${uid}`).set(defaultAgreements);
-                appConfig.rates = defaultAgreements;
+            
+            // Default values ko hasil karne ka function
+            const getDefaultAgreements = () => JSON.parse(JSON.stringify({
+                current: { tonRate: 22, restRate: 1100, layoffRate: 549, allowance: 20000 },
+                new: { tonRate: 22, restRate: 1100, layoffRate: 549, allowance: 26000 }
+            }));
+
+            try {
+                const snapshot = await database.ref(`agreements/${uid}`).once('value');
+                if (snapshot.exists()) {
+                    const dbRates = snapshot.val();
+                    // Default values se shuru karein
+                    const finalRates = getDefaultAgreements();
+                    
+                    // Database se aye hue data ko default ke upar merge karein
+                    // Is se yeh yaqeeni hoga ke 'current' aur 'new' hamesha mojood honge
+                    if (dbRates && dbRates.current) {
+                        Object.assign(finalRates.current, dbRates.current);
+                    }
+                    if (dbRates && dbRates.new) {
+                        Object.assign(finalRates.new, dbRates.new);
+                    }
+                    
+                    appConfig.rates = finalRates;
+
+                } else {
+                    // Agar database mein data nahi hai, to default set karein
+                    const defaultAgreements = getDefaultAgreements();
+                    await database.ref(`agreements/${uid}`).set(defaultAgreements);
+                    appConfig.rates = defaultAgreements;
+                }
+            } catch (error) {
+                // Kisi bhi error ki soorat mein default values istemal karein taake app na ruke
+                console.error("Agreements load karne mein masla:", error.message);
+                showSnackbar('Agreements load nahi ho sake, default rates istemal kiye ja rahe hain.', 'error');
+                appConfig.rates = getDefaultAgreements();
             }
         }
         
@@ -594,7 +565,7 @@ function applyStaggerAnimation(containerSelector) {
                     const finalPay = dailyPay + totalAllowance;
                     detailsPerWorker += `${w.padEnd(10)}: Rs ${dailyPay.toFixed(2)} (Earned) + Rs ${totalAllowance.toFixed(2)} (Allowance) = Rs ${finalPay.toFixed(2)}\n`;
                 });
-                let resultText = `PAYROLL: ${startDateStr} to ${endDateStr}\n\n`;
+                let resultText = `PAYROLL: ${startDateStr} to ${endStr}\n\n`;
                 resultText += `Allowance Calculation:\n`;
                 resultText += `  - Pay Events Detected: ${numAllowances}\n`;
                 resultText += `  - Allowance Per Event: Rs ${allowancePerPeriod.toFixed(2)}\n`;
@@ -932,7 +903,19 @@ function applyStaggerAnimation(containerSelector) {
             });
             resultElem.innerText = resultText;
         }
+        
+        function applyStaggerAnimation(containerSelector) {
+            const container = document.querySelector(containerSelector);
+            if (!container) return; // Agar container na milay to ruk jao
 
+            const items = Array.from(container.children);
+            items.forEach((item, i) => {
+                setTimeout(() => {
+                    item.style.opacity = '1';
+                    item.style.transform = 'translateY(0)';
+                }, 70 * i); // Har item 70ms ke waqfay se ayega
+            });
+        }
     </script>
 </body>
 </html>
