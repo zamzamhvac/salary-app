@@ -88,6 +88,7 @@
             <div class="nav-header"><h2>Salary Pro</h2></div>
             <ul class="nav-list">
                 <li><a href="#" class="nav-link" data-page="daily-entry-page"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg><span>Daily Entry</span></a></li>
+                <li><a href="#" class="nav-link" data-page="salaries-page"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg><span>Salaries</span></a></li>
                 <li><a href="#" class="nav-link" data-page="agreements-page"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg><span>Agreements</span></a></li>
                 <li><a href="#" class="nav-link" data-page="bonus-page"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"></polyline><rect x="2" y="7" width="20" height="5"></rect><line x1="12" y1="22" x2="12" y2="7"></line><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path></svg><span>Bonus</span></a></li>
                 <li><a href="#" class="nav-link" data-page="arrears-page"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg><span>Arrears</span></a></li>
@@ -103,6 +104,7 @@
             <div class="page-content">
                 <!-- Pages ki nayi tarteeb -->
                 <div id="daily-entry-page" class="page"></div>
+                <div id="salaries-page" class="page"></div>
                 <div id="agreements-page" class="page"></div>
                 <div id="bonus-page" class="page"></div>
                 <div id="arrears-page" class="page"></div>
@@ -115,7 +117,7 @@
         
         <nav class="bottom-nav">
             <button class="bottom-nav-item" data-page="daily-entry-page"><span>Entry</span></button>
-            <button class="bottom-nav-item" data-page="agreements-page"><span>Agreements</span></button>
+            <button class="bottom-nav-item" data-page="salaries-page"><span>Salaries</span></button>
             <button class="bottom-nav-item" data-page="bonus-page"><span>Bonus</span></button>
         </nav>
     </div>
@@ -302,6 +304,21 @@
                     document.getElementById('dayType').addEventListener('change', () => document.getElementById('tonnage-section').style.display = document.getElementById('dayType').value === 'rest' ? 'none' : 'block');
                     initializeHistoryView(); 
                     break;
+                case 'salaries-page':
+                    content = `
+                        <div id="current-expected-salary-card"></div>
+                        <div class="card">
+                            <h2 class="card-title">Guzishta Salary Records</h2>
+                            <p style="color: var(--md-text-secondary); font-size: 14px;">Guzishta records dekhne ke liye neeche diye gaye menu se muddat (period) select karein.</p>
+                            <div class="select-group" style="margin-bottom: 16px;">
+                                <select id="salariesPeriodSelect" class="form-select" title="Select period to view salaries"></select>
+                            </div>
+                            <div id="salaries-table-container"></div>
+                        </div>`;
+                    container.innerHTML = content;
+                    initializeSalariesView();
+                    renderCurrentExpectedSalary();
+                    break;
                 case 'agreements-page':
                     content = `<div class="grid-layout">
                         <div class="card"><h2 class="card-title">Current Agreement</h2>
@@ -409,8 +426,14 @@
             } else if (type === 'rest') {
                 workerList.forEach(w => { dailyEarnings[w] = restRate; });
             } else if (type === 'special_overtime' && presentCount > 0) {
-                let perWorker = ((tonnage * tonRate * 2) / presentCount) + layoffRate;
-                workerList.forEach(w => { dailyEarnings[w] = present.includes(w) ? perWorker : layoffRate; });
+                const baseEarningPerWorker = (tonnage * tonRate) / presentCount;
+                let perWorkerPay;
+                if (baseEarningPerWorker < layoffRate) {
+                    perWorkerPay = (layoffRate * 2) + layoffRate;
+                } else {
+                    perWorkerPay = (baseEarningPerWorker * 2) + layoffRate;
+                }
+                workerList.forEach(w => { dailyEarnings[w] = present.includes(w) ? perWorkerPay : layoffRate; });
             }
             return dailyEarnings;
         }
@@ -537,7 +560,6 @@
             if (!resultElem) return;
             resultElem.innerText = 'Calculating...';
 
-            // Sahi agreement ki shuruaat ki tareekh (10 Oct 2023)
             const ARREARS_START_DATE = '2023-10-10';
             
             const today = new Date();
@@ -645,8 +667,8 @@
             select.innerHTML = '';
             const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
             let currentDate = new Date();
-            currentDate.setDate(1); // Start from the first of the current month for cleaner logic
-            for (let i = 0; i < 24; i++) { // 24 periods = 12 months
+            currentDate.setDate(1); 
+            for (let i = 0; i < 24; i++) {
                 const year = currentDate.getFullYear();
                 const month = currentDate.getMonth();
                 
@@ -661,6 +683,186 @@
                 select.appendChild(option1);
 
                 currentDate.setMonth(currentDate.getMonth() - 1);
+            }
+        }
+        
+        // ***** NAYE AUR TABDEEL SHUDA FUNCTIONS *****
+        
+        async function renderCurrentExpectedSalary() {
+            const container = document.getElementById('current-expected-salary-card');
+            if (!container) return;
+            container.innerHTML = `<div class="card"><div class="card-title">Calculating Current Salary...</div></div>`;
+            
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = today.getMonth() + 1;
+            const day = today.getDate();
+            let startDate, endDate, periodTitle;
+            if (day <= 15) {
+                startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+                endDate = `${year}-${String(month).padStart(2, '0')}-15`;
+                periodTitle = `Mojooda Expected Salary (1 se 15 Tak)`;
+            } else {
+                startDate = `${year}-${String(month).padStart(2, '0')}-16`;
+                const lastDayOfMonth = new Date(year, month, 0).getDate();
+                endDate = `${year}-${String(month).padStart(2, '0')}-${String(lastDayOfMonth).padStart(2, '0')}`;
+                periodTitle = `Mojooda Expected Salary (16 se Aakhir Tak)`;
+            }
+
+            try {
+                const snapshot = await database.ref(`salaries/${auth.currentUser.uid}`).orderByChild('date').startAt(startDate).endAt(endDate).once('value');
+                let periodSalaries = {};
+                workerList.forEach(w => periodSalaries[w] = 0);
+                
+                if (snapshot.exists()) {
+                    snapshot.forEach(child => {
+                        const record = child.val();
+                        if (record && record.earnings) {
+                            workerList.forEach(w => {
+                                periodSalaries[w] += record.earnings[w] || 0;
+                            });
+                        }
+                    });
+                }
+
+                const allowance = (appConfig.rates.current.allowance || 0) / 2;
+                let salaryListHTML = '<ul style="list-style:none; padding: 0; margin:0;">';
+                workerList.forEach(w => {
+                    const finalPay = periodSalaries[w] + allowance;
+                    salaryListHTML += `<li style="display:flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee;">
+                        <span>${w}</span>
+                        <span style="font-weight: 500;">Rs ${finalPay.toFixed(2)}</span>
+                    </li>`;
+                });
+                salaryListHTML += '</ul>';
+                
+                container.innerHTML = `<div class="card"><h2 class="card-title">${periodTitle}</h2>${salaryListHTML}</div>`;
+
+            } catch(error) {
+                container.innerHTML = `<div class="card"><p style="color:red;">Error loading current salary: ${error.message}</p></div>`;
+            }
+        }
+        
+        function initializeSalariesView() {
+            populateSalariesPeriodSelector(); 
+            const selector = document.getElementById('salariesPeriodSelect');
+            if (selector){
+                selector.addEventListener('change', renderSalariesTable); 
+                renderSalariesTable();
+            }
+        }
+
+        function populateSalariesPeriodSelector() {
+            const select = document.getElementById('salariesPeriodSelect');
+            if (!select) return;
+            select.innerHTML = '';
+            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            let currentDate = new Date();
+            currentDate.setDate(1);
+            for (let i = 0; i < 24; i++) {
+                const year = currentDate.getFullYear();
+                const month = currentDate.getMonth();
+                
+                let option2 = document.createElement('option');
+                option2.value = `${year}-${String(month + 1).padStart(2, '0')}-16`; 
+                option2.textContent = `${monthNames[month]} ${year} - (16 se Aakhir Tak)`;
+                select.appendChild(option2);
+
+                let option1 = document.createElement('option');
+                option1.value = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+                option1.textContent = `${monthNames[month]} ${year} - (1 se 15 Tak)`;
+                select.appendChild(option1);
+
+                currentDate.setMonth(currentDate.getMonth() - 1);
+            }
+            // Set default to current period
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = today.getMonth() + 1;
+            const day = today.getDate();
+            if (day <= 15) { 
+                select.value = `${year}-${String(month).padStart(2, '0')}-01`; 
+            } else { 
+                select.value = `${year}-${String(month).padStart(2, '0')}-16`; 
+            }
+        }
+
+        async function renderSalariesTable() {
+            const container = document.getElementById('salaries-table-container');
+            if (!container) return;
+            const selectedPeriod = document.getElementById('salariesPeriodSelect').value;
+            if (!selectedPeriod) { 
+                container.innerHTML = "<p>Please select a period to view salaries.</p>"; 
+                return; 
+            }
+            container.innerHTML = "Loading records...";
+            const [year, month, day] = selectedPeriod.split('-').map(Number);
+            let startDate, endDate;
+            if (day === 1) {
+                startDate = selectedPeriod;
+                endDate = `${year}-${String(month).padStart(2, '0')}-15`;
+            } else {
+                startDate = selectedPeriod;
+                const lastDayOfMonth = new Date(year, month, 0).getDate();
+                endDate = `${year}-${String(month).padStart(2, '0')}-${String(lastDayOfMonth).padStart(2, '0')}`;
+            }
+            
+            try {
+                const snapshot = await database.ref(`salaries/${auth.currentUser.uid}`).orderByChild('date').startAt(startDate).endAt(endDate).once('value');
+                
+                let tableHTML = `<p>No salary records found for this period.</p>`;
+                let summaryHTML = '';
+
+                if (snapshot.exists()) {
+                    let tableRowsHTML = '';
+                    let periodSalaries = {};
+                    workerList.forEach(w => periodSalaries[w] = 0);
+                    
+                    const records = snapshot.val();
+                    const sortedKeys = Object.keys(records).sort((a, b) => new Date(a) - new Date(b));
+                    
+                    sortedKeys.forEach(dateKey => {
+                        const rec = records[dateKey];
+                        const payment = rec.perWorkerEarning || 0;
+                        let tonsDisplay = rec.tonnage || 0;
+                        if(rec.type === 'rest') tonsDisplay = 'Rest';
+                        if(rec.type === 'special_overtime') tonsDisplay = `${rec.tonnage} (OT)`;
+                        const presentCount = rec.presentCount !== undefined ? rec.presentCount : 'N/A';
+                        let absentWorkersStr = 'None';
+                        if (rec.presentWorkers && Array.isArray(rec.presentWorkers) && workerList) {
+                            const absent = workerList.filter(w => !rec.presentWorkers.includes(w));
+                            if (absent.length > 0) absentWorkersStr = absent.join(', ');
+                        }
+                        if (rec && rec.earnings) {
+                            workerList.forEach(w => {
+                                periodSalaries[w] += rec.earnings[w] || 0;
+                            });
+                        }
+                        tableRowsHTML += `<tr><td>${new Date(rec.date + 'T00:00:00').toLocaleDateString('en-GB', {day:'2-digit', month:'2-digit'})}</td><td>${tonsDisplay}</td><td>${presentCount}</td><td>${payment.toFixed(2)}</td><td>${absentWorkersStr}</td></tr>`;
+                    });
+
+                    tableHTML = `<style>.salaries-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px; }.salaries-table th, .salaries-table td { padding: 8px 12px; border: 1px solid var(--md-divider-color); text-align: left; }.salaries-table thead { background-color: #f0f0f0; }.salaries-table th { font-weight: 500; }.salaries-table td:nth-child(2),.salaries-table td:nth-child(3),.salaries-table td:nth-child(4) { text-align: right; }</style><table class="salaries-table"><thead><tr><th>Date</th><th>Tons</th><th>Workers</th><th>Payment/Day</th><th>Absent</th></tr></thead><tbody>${tableRowsHTML}</tbody></table>`;
+                    
+                    // Salary Summary Card
+                    const allowance = (appConfig.rates.current.allowance || 0) / 2;
+                    let salaryListHTML = '<ul style="list-style:none; padding: 0; margin:0;">';
+                    workerList.forEach(w => {
+                        const finalPay = periodSalaries[w] + allowance;
+                        salaryListHTML += `<li style="display:flex; flex-wrap:wrap; justify-content: space-between; align-items:center; padding: 10px 4px; border-bottom: 1px solid #eee;">
+                            <span style="font-weight: 500; margin-right:12px;">${w}:</span>
+                            <span style="font-size:12px; color:#555">Rs ${periodSalaries[w].toFixed(2)} + Rs ${allowance.toFixed(2)} =</span>
+                            <span style="font-weight: bold; color:var(--md-primary-color); font-size: 16px;">Rs ${finalPay.toFixed(2)}</span>
+                        </li>`;
+                    });
+                    salaryListHTML += '</ul>';
+                    summaryHTML = `<div class="card" style="margin-top:24px;"><h3 class="card-title" style="font-size:16px; margin-bottom:16px;">Salary Summary (with Allowance)</h3>${salaryListHTML}</div>`;
+                }
+                
+                container.innerHTML = tableHTML + summaryHTML;
+
+            } catch (error) {
+                container.innerHTML = `<p style="color: red;">Error loading data: ${error.message}</p>`;
+                console.error("Error in renderSalariesTable:", error);
             }
         }
         
