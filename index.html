@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Salary Pro</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
     :root {
@@ -92,6 +92,31 @@
     .grid-layout { display: grid; grid-template-columns: 1fr; gap: 16px; }
     @media (min-width: 960px) { .grid-layout { grid-template-columns: 1fr 1fr; } }
     .stagger-in > * { opacity: 0; transform: translateY(15px); transition: opacity 0.4s ease-out, transform 0.4s ease-out; }
+    
+    /* New styles for cycle indicator */
+    .cycle-indicator { 
+        background-color: #e3f2fd; 
+        padding: 8px 12px; 
+        border-radius: 20px; 
+        font-size: 14px; 
+        margin-bottom: 16px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .cycle-icon {
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--md-primary-color);
+        color: white;
+        border-radius: 50%;
+        font-weight: bold;
+    }
+    .cycle-work { background-color: #e3f2fd; }
+    .cycle-rest { background-color: #e8f5e9; }
 </style>
 </head>
 <body>
@@ -158,9 +183,9 @@
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-database.js"></script>
     <script>
-        // Baraye meharbani, neeche di gayi config ko apne Firebase project ki ASAL config se badal dein
+        // Firebase configuration
         const firebaseConfig = {
-            apiKey: "AIzaSyAya9Kjvrqrvpm7JuXU7aa_qyBrJKtjLyo", // <== YEH KEY GHALAT HAI, ASAL KEY DAALEIN
+            apiKey: "AIzaSyAya9Kjvrqrvpm7JuXU7aa_qyBrJKtjLyo",
             authDomain: "salary-d19b0.firebaseapp.com",
             databaseURL: "https://salary-d19b0-default-rtdb.asia-southeast1.firebasedatabase.app",
             projectId: "salary-d19b0",
@@ -175,6 +200,12 @@
         const database = firebase.database();
         let workerList = [];
         let appConfig = { rates: null };
+        
+        // Cycle constants
+        const WORK_CYCLE = 6;
+        const REST_CYCLE = 2;
+        let currentCycleDay = 1;
+        let currentCycleType = 'work'; // 'work' or 'rest'
 
         const LOADER_HTML = `<div class="loader-container"><div class="loader"></div></div>`;
 
@@ -186,6 +217,7 @@
             else if (type === 'error') snackbar.classList.add('error');
             setTimeout(() => { snackbar.className = snackbar.className.replace('show', ''); }, 3000);
         }
+        
         function showConfirmationModal(message, onConfirm) {
             document.getElementById('modal-text').textContent = message;
             const modal = document.getElementById('confirmation-modal');
@@ -225,6 +257,7 @@
             setupAppListeners();
             await loadWorkers();
             await loadAgreements();
+            await determineCurrentCycle(); // NEW: Determine current cycle state
             showPage('daily-entry-page');
         }
 
@@ -259,11 +292,74 @@
             }
         }
         
-        // ===== YEH FUNCTION THEEK KAR DIYA GAYA HAI (ALLOWANCE ERROR KE LIYE) =====
+        // NEW FUNCTION: Determine current cycle state based on saved records
+        async function determineCurrentCycle() {
+            const uid = auth.currentUser.uid;
+            try {
+                const snapshot = await database.ref(`salaries/${uid}`).orderByKey().limitToLast(10).once('value');
+                
+                if (!snapshot.exists()) {
+                    // No records found, start fresh
+                    currentCycleDay = 1;
+                    currentCycleType = 'work';
+                    return;
+                }
+                
+                // Get all records sorted by date (newest first)
+                const records = snapshot.val();
+                const sortedDates = Object.keys(records).sort((a, b) => new Date(b) - new Date(a));
+                
+                // Start from the most recent record
+                let lastType = records[sortedDates[0]].type;
+                let consecutiveDays = 1;
+                
+                // Count consecutive days of same type
+                for (let i = 1; i < sortedDates.length; i++) {
+                    const prevDate = new Date(sortedDates[i-1]);
+                    const currDate = new Date(sortedDates[i]);
+                    
+                    // Check if dates are consecutive (difference of 1 day)
+                    const diffDays = Math.round((prevDate - currDate) / (1000 * 60 * 60 * 24));
+                    if (diffDays !== 1) break; // Not consecutive, stop counting
+                    
+                    if (records[sortedDates[i]].type === lastType) {
+                        consecutiveDays++;
+                    } else {
+                        break;
+                    }
+                }
+                
+                // Determine cycle state based on last record type and consecutive days
+                if (lastType === 'work') {
+                    if (consecutiveDays >= WORK_CYCLE) {
+                        currentCycleType = 'rest';
+                        currentCycleDay = 1;
+                    } else {
+                        currentCycleType = 'work';
+                        currentCycleDay = consecutiveDays + 1;
+                    }
+                } else if (lastType === 'rest') {
+                    if (consecutiveDays >= REST_CYCLE) {
+                        currentCycleType = 'work';
+                        currentCycleDay = 1;
+                    } else {
+                        currentCycleType = 'rest';
+                        currentCycleDay = consecutiveDays + 1;
+                    }
+                }
+                
+                console.log(`Determined cycle state: ${currentCycleType} day ${currentCycleDay}`);
+                
+            } catch (error) {
+                console.error("Error determining cycle state:", error);
+                // Fallback to default values
+                currentCycleDay = 1;
+                currentCycleType = 'work';
+            }
+        }
+
         async function loadAgreements() {
             const uid = auth.currentUser.uid;
-            
-            // Default values ko hasil karne ka function
             const getDefaultAgreements = () => JSON.parse(JSON.stringify({
                 current: { tonRate: 22, restRate: 1100, layoffRate: 549, allowance: 20000 },
                 new: { tonRate: 22, restRate: 1100, layoffRate: 549, allowance: 26000 }
@@ -273,28 +369,20 @@
                 const snapshot = await database.ref(`agreements/${uid}`).once('value');
                 if (snapshot.exists()) {
                     const dbRates = snapshot.val();
-                    // Default values se shuru karein
                     const finalRates = getDefaultAgreements();
-                    
-                    // Database se aye hue data ko default ke upar merge karein
-                    // Is se yeh yaqeeni hoga ke 'current' aur 'new' hamesha mojood honge
                     if (dbRates && dbRates.current) {
                         Object.assign(finalRates.current, dbRates.current);
                     }
                     if (dbRates && dbRates.new) {
                         Object.assign(finalRates.new, dbRates.new);
                     }
-                    
                     appConfig.rates = finalRates;
-
                 } else {
-                    // Agar database mein data nahi hai, to default set karein
                     const defaultAgreements = getDefaultAgreements();
                     await database.ref(`agreements/${uid}`).set(defaultAgreements);
                     appConfig.rates = defaultAgreements;
                 }
             } catch (error) {
-                // Kisi bhi error ki soorat mein default values istemal karein taake app na ruke
                 console.error("Agreements load karne mein masla:", error.message);
                 showSnackbar('Agreements load nahi ho sake, default rates istemal kiye ja rahe hain.', 'error');
                 appConfig.rates = getDefaultAgreements();
@@ -341,6 +429,10 @@
                     content = `<div class="grid-layout">
                         <div class="card">
                             <h2 class="card-title">Daily Work Record</h2>
+                            <div class="cycle-indicator ${currentCycleType === 'work' ? 'cycle-work' : 'cycle-rest'}" id="cycle-indicator">
+                                <div class="cycle-icon">${currentCycleDay}</div>
+                                <span id="cycle-text">${currentCycleType === 'work' ? 'Work Day' : 'Rest Day'} - Day ${currentCycleDay}</span>
+                            </div>
                             <input type="date" id="entryDate" class="form-select">
                             <div class="select-group"><select id="dayType" class="form-select"><option value="work">Work Day</option><option value="rest">Rest Day</option><option value="special_overtime">Special Overtime</option></select></div>
                             <div id="tonnage-section" class="form-group"><input type="number" id="tonnage" class="form-input" placeholder=" " required><label for="tonnage" class="form-label">Total Tonnage</label></div>
@@ -358,8 +450,23 @@
                     container.innerHTML = content;
                     applyStaggerAnimation('.stagger-in');
                     document.getElementById('entryDate').valueAsDate = new Date();
-                    document.getElementById('dayType').addEventListener('change', () => document.getElementById('tonnage-section').style.display = document.getElementById('dayType').value === 'rest' ? 'none' : 'block');
+                    
+                    // Set day type based on current cycle
+                    if (currentCycleType === 'rest') {
+                        document.getElementById('dayType').value = 'rest';
+                        document.getElementById('tonnage-section').style.display = 'none';
+                    } else {
+                        document.getElementById('dayType').value = 'work';
+                        document.getElementById('tonnage-section').style.display = 'block';
+                    }
+                    
+                    document.getElementById('dayType').addEventListener('change', () => {
+                        const dayType = document.getElementById('dayType').value;
+                        document.getElementById('tonnage-section').style.display = dayType === 'rest' ? 'none' : 'block';
+                    });
+                    
                     initializeHistoryView(); 
+                    setupDailyEntryPage();
                     break;
                 case 'salaries-page':
                     content = `
@@ -512,10 +619,162 @@
             const earnings = _calculateSingleDay(recordDataForCalc, appConfig.rates.current);
             const perWorkerEarning = presentWorkers.length > 0 ? (earnings[presentWorkers[0]] || 0) : 0;
             
-            const recordToSave = { date, type: dayType, tonnage, presentCount: presentWorkers.length, presentWorkers, earnings, perWorkerEarning };
+            const recordToSave = { 
+                date, 
+                type: dayType, 
+                tonnage, 
+                presentCount: presentWorkers.length, 
+                presentWorkers, 
+                earnings, 
+                perWorkerEarning 
+            };
+            
+            // Save the record
             await database.ref(`salaries/${auth.currentUser.uid}/${date}`).set(recordToSave);
+            
+            // Update cycle for next day
+            updateCycleState(dayType);
+            
             showSnackbar('Daily entry saved successfully!', 'success');
             loadHistory();
+        }
+        
+        // UPDATED FUNCTION: Update cycle state after saving
+        function updateCycleState(dayType) {
+            if (dayType === 'work') {
+                if (currentCycleType === 'work') {
+                    if (currentCycleDay < WORK_CYCLE) {
+                        currentCycleDay++;
+                    } else {
+                        currentCycleType = 'rest';
+                        currentCycleDay = 1;
+                    }
+                } else {
+                    // If work day during rest cycle, reset to work cycle
+                    currentCycleType = 'work';
+                    currentCycleDay = 1;
+                }
+            } else if (dayType === 'rest') {
+                if (currentCycleType === 'rest') {
+                    if (currentCycleDay < REST_CYCLE) {
+                        currentCycleDay++;
+                    } else {
+                        currentCycleType = 'work';
+                        currentCycleDay = 1;
+                    }
+                } else {
+                    // If rest day during work cycle, reset to rest cycle
+                    currentCycleType = 'rest';
+                    currentCycleDay = 1;
+                }
+            }
+            
+            // Update UI indicator
+            updateCycleIndicator();
+        }
+        
+        // NEW FUNCTION: Update the cycle indicator UI
+        function updateCycleIndicator() {
+            const cycleText = document.getElementById('cycle-text');
+            const cycleIndicator = document.getElementById('cycle-indicator');
+            
+            if (cycleText && cycleIndicator) {
+                cycleText.textContent = `${currentCycleType === 'work' ? 'Work Day' : 'Rest Day'} - Day ${currentCycleDay}`;
+                cycleIndicator.className = `cycle-indicator ${currentCycleType === 'work' ? 'cycle-work' : 'cycle-rest'}`;
+                
+                // Update the cycle icon number
+                const cycleIcon = cycleIndicator.querySelector('.cycle-icon');
+                if (cycleIcon) {
+                    cycleIcon.textContent = currentCycleDay;
+                }
+            }
+            
+            // Set day type based on current cycle
+            const dayTypeSelect = document.getElementById('dayType');
+            if (dayTypeSelect) {
+                if (currentCycleType === 'rest') {
+                    dayTypeSelect.value = 'rest';
+                    document.getElementById('tonnage-section').style.display = 'none';
+                } else {
+                    dayTypeSelect.value = 'work';
+                    document.getElementById('tonnage-section').style.display = 'block';
+                }
+            }
+        }
+        
+        // NEW FUNCTION: Setup daily entry page with cycle and auto-fill
+        async function setupDailyEntryPage() {
+            try {
+                // Update UI indicator
+                updateCycleIndicator();
+                
+                // Auto-fill missing days
+                await fillMissingDays();
+            } catch (error) {
+                console.error("Setup daily entry error:", error);
+                showSnackbar("Error setting up daily entry page", 'error');
+            }
+        }
+        
+        // NEW FUNCTION: Fill missing days with 1-ton entries
+        async function fillMissingDays() {
+            try {
+                const uid = auth.currentUser.uid;
+                const today = new Date();
+                const todayStr = today.toISOString().split('T')[0];
+                
+                // Get the last saved date
+                const lastRecordSnapshot = await database.ref(`salaries/${uid}`).orderByKey().limitToLast(1).once('value');
+                let lastDate = null;
+                
+                if (lastRecordSnapshot.exists()) {
+                    const lastRecordKey = Object.keys(lastRecordSnapshot.val())[0];
+                    lastDate = new Date(lastRecordKey);
+                } else {
+                    // If no records, start from yesterday
+                    lastDate = new Date();
+                    lastDate.setDate(lastDate.getDate() - 1);
+                }
+                
+                // Calculate days to fill
+                const daysToFill = [];
+                const currentDate = new Date(lastDate);
+                currentDate.setDate(currentDate.getDate() + 1); // Start from next day
+                
+                while (currentDate < today) {
+                    daysToFill.push(new Date(currentDate));
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+                
+                // Create entries for missing days
+                for (const date of daysToFill) {
+                    const dateStr = date.toISOString().split('T')[0];
+                    const record = {
+                        date: dateStr,
+                        type: 'work',
+                        tonnage: 1, // Default 1 ton for missing days
+                        presentWorkers: [],
+                        presentCount: 0,
+                        isAutoGenerated: true
+                    };
+                    
+                    // Calculate earnings
+                    const earnings = _calculateSingleDay(record, appConfig.rates.current);
+                    record.earnings = earnings;
+                    record.perWorkerEarning = appConfig.rates.current.layoffRate;
+                    
+                    // Save to database
+                    await database.ref(`salaries/${uid}/${dateStr}`).set(record);
+                }
+                
+                if (daysToFill.length > 0) {
+                    showSnackbar(`${daysToFill.length} missing days filled with 1-ton entries`, 'success');
+                    loadHistory();
+                }
+            } catch (error) {
+                console.error("Error filling missing days:", error);
+                showSnackbar("Error filling missing days", 'error');
+            }
         }
 
         function isLastDayOfMonth(dt) {
@@ -565,7 +824,6 @@
                     const finalPay = dailyPay + totalAllowance;
                     detailsPerWorker += `${w.padEnd(10)}: Rs ${dailyPay.toFixed(2)} (Earned) + Rs ${totalAllowance.toFixed(2)} (Allowance) = Rs ${finalPay.toFixed(2)}\n`;
                 });
-                // FIXED: endStr ko endDateStr se replace kiya gaya
                 let resultText = `PAYROLL: ${startDateStr} to ${endDateStr}\n\n`;
                 resultText += `Allowance Calculation:\n`;
                 resultText += `  - Pay Events Detected: ${numAllowances}\n`;
@@ -583,11 +841,11 @@
             if (!container) return;
             const selectedPeriod = document.getElementById('historyPeriodSelect').value;
             if (!selectedPeriod) { container.innerHTML = "<p>Please select a period to view history.</p>"; return; }
+            container.innerHTML = LOADER_HTML;
             const [year, month, day] = selectedPeriod.split('-').map(Number);
             let startDate, endDate;
             if (day === 1) { startDate = selectedPeriod; endDate = `${year}-${String(month).padStart(2, '0')}-15`; } 
             else { startDate = selectedPeriod; const lastDayOfMonth = new Date(year, month, 0).getDate(); endDate = `${year}-${String(month).padStart(2, '0')}-${lastDayOfMonth}`; }
-            container.innerHTML = LOADER_HTML;
             database.ref(`salaries/${auth.currentUser.uid}`).orderByChild('date').startAt(startDate).endAt(endDate).once('value', snapshot => {
                 if (!snapshot.exists()) { container.innerHTML = "<p>No daily records found for this period.</p>"; return; }
                 let rows = '';
@@ -907,35 +1165,29 @@
         
         function applyStaggerAnimation(containerSelector) {
             const container = document.querySelector(containerSelector);
-            if (!container) return; // Agar container na milay to ruk jao
-
+            if (!container) return;
             const items = Array.from(container.children);
             items.forEach((item, i) => {
                 setTimeout(() => {
                     item.style.opacity = '1';
                     item.style.transform = 'translateY(0)';
-                }, 70 * i); // Har item 70ms ke waqfay se ayega
+                }, 70 * i);
             });
         }
 
-        // === ADDED: Worker names save karne wala function ===
         async function saveWorkerNames() {
             const uid = auth.currentUser.uid;
             const newWorkerList = [];
-            
-            // Existing workers ke names collect karein
             for (let i = 0; i < workerList.length; i++) {
                 const input = document.getElementById(`worker-name-${i}`);
                 if (input && input.value.trim() !== '') {
                     newWorkerList.push(input.value.trim());
                 }
             }
-
             if (newWorkerList.length === 0) {
                 showSnackbar("Kam az kam ek worker ka naam zaroori hai", 'error');
                 return;
             }
-
             try {
                 await database.ref(`workers/${uid}`).set(newWorkerList);
                 workerList = newWorkerList;
