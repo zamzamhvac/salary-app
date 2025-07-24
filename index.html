@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Salary Pro</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
     :root {
@@ -565,7 +565,8 @@
                     const finalPay = dailyPay + totalAllowance;
                     detailsPerWorker += `${w.padEnd(10)}: Rs ${dailyPay.toFixed(2)} (Earned) + Rs ${totalAllowance.toFixed(2)} (Allowance) = Rs ${finalPay.toFixed(2)}\n`;
                 });
-                let resultText = `PAYROLL: ${startDateStr} to ${endStr}\n\n`;
+                // FIXED: endStr ko endDateStr se replace kiya gaya
+                let resultText = `PAYROLL: ${startDateStr} to ${endDateStr}\n\n`;
                 resultText += `Allowance Calculation:\n`;
                 resultText += `  - Pay Events Detected: ${numAllowances}\n`;
                 resultText += `  - Allowance Per Event: Rs ${allowancePerPeriod.toFixed(2)}\n`;
@@ -915,6 +916,33 @@
                     item.style.transform = 'translateY(0)';
                 }, 70 * i); // Har item 70ms ke waqfay se ayega
             });
+        }
+
+        // === ADDED: Worker names save karne wala function ===
+        async function saveWorkerNames() {
+            const uid = auth.currentUser.uid;
+            const newWorkerList = [];
+            
+            // Existing workers ke names collect karein
+            for (let i = 0; i < workerList.length; i++) {
+                const input = document.getElementById(`worker-name-${i}`);
+                if (input && input.value.trim() !== '') {
+                    newWorkerList.push(input.value.trim());
+                }
+            }
+
+            if (newWorkerList.length === 0) {
+                showSnackbar("Kam az kam ek worker ka naam zaroori hai", 'error');
+                return;
+            }
+
+            try {
+                await database.ref(`workers/${uid}`).set(newWorkerList);
+                workerList = newWorkerList;
+                showSnackbar("Worker list update ho gayi!", 'success');
+            } catch (error) {
+                showSnackbar(`Worker list save karne mein masla: ${error.message}`, 'error');
+            }
         }
     </script>
 </body>
