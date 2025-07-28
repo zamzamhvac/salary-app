@@ -117,6 +117,18 @@
     }
     .cycle-work { background-color: #e3f2fd; }
     .cycle-rest { background-color: #e8f5e9; }
+    /* Forgot Password Button Style */
+    #forgot-password-btn {
+        width: 100%;
+        margin-top: 8px;
+        background: transparent;
+        color: var(--md-primary-color);
+        box-shadow: none;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        text-decoration: underline;
+    }
 </style>
 </head>
 <body>
@@ -130,6 +142,22 @@
             </div>
         </div>
     </div>
+    <!-- Reset Password Modal -->
+    <div id="reset-password-modal" class="hidden">
+        <div class="modal-content">
+            <h2 style="color:var(--md-primary-color); margin-top:0;">Reset Password</h2>
+            <p style="margin-bottom:16px;">Apna email address daalein, hum aapko password reset karne ka link bhej denge.</p>
+            <div class="form-group">
+                <input type="email" id="reset-email" class="form-input" placeholder=" " required>
+                <label for="reset-email" class="form-label">Email Address</label>
+            </div>
+            <p id="reset-error" style="color:var(--color-error); min-height:20px; font-size:14px;"></p>
+            <div class="modal-actions">
+                <button id="reset-cancel-btn" class="btn secondary">Cancel</button>
+                <button id="reset-send-btn" class="btn primary">Send Reset Link</button>
+            </div>
+        </div>
+    </div>
     <div id="login-container">
         <div class="login-card">
             <h1>Salary Pro</h1>
@@ -138,6 +166,7 @@
             <button id="login-btn" class="btn primary" style="width:100%;">Login</button>
             <p style="margin: 16px 0; color: var(--md-text-secondary);">OR</p>
             <button id="signup-btn" class="btn secondary" style="width:100%;">Sign Up</button>
+            <button id="forgot-password-btn">Forgot Password?</button>
             <p id="auth-error"></p>
         </div>
     </div>
@@ -239,6 +268,35 @@
 
         document.getElementById('login-btn').addEventListener('click', () => auth.signInWithEmailAndPassword(document.getElementById('email').value, document.getElementById('password').value).catch(err => document.getElementById('auth-error').textContent = err.message));
         document.getElementById('signup-btn').addEventListener('click', () => auth.createUserWithEmailAndPassword(document.getElementById('email').value, document.getElementById('password').value).catch(err => document.getElementById('auth-error').textContent = err.message));
+        
+        // Forgot Password Functionality
+        document.getElementById('forgot-password-btn').addEventListener('click', () => {
+            document.getElementById('reset-password-modal').classList.remove('hidden');
+            document.getElementById('reset-email').value = document.getElementById('email').value;
+        });
+        
+        document.getElementById('reset-cancel-btn').addEventListener('click', () => {
+            document.getElementById('reset-password-modal').classList.add('hidden');
+        });
+        
+        document.getElementById('reset-send-btn').addEventListener('click', () => {
+            const email = document.getElementById('reset-email').value;
+            const errorElem = document.getElementById('reset-error');
+            
+            if (!email) {
+                errorElem.textContent = "Email address zaroori hai";
+                return;
+            }
+            
+            auth.sendPasswordResetEmail(email)
+                .then(() => {
+                    showSnackbar('Password reset link aapke email par bhej diya gaya', 'success');
+                    document.getElementById('reset-password-modal').classList.add('hidden');
+                })
+                .catch(err => {
+                    errorElem.textContent = err.message;
+                });
+        });
         
         auth.onAuthStateChanged(async user => {
             const loginContainer = document.getElementById('login-container');
@@ -600,7 +658,7 @@
             }
 
             if (presentCount === 0) {
-                workerList.forEach(w => dailyEarnings[w] = layoffRate);
+                workerList.forEach(w => { dailyEarnings[w] = layoffRate; });
                 return dailyEarnings;
             }
 
