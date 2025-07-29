@@ -22,6 +22,8 @@
         --color-error: #D32F2F;
     }
     *, *::before, *::after { box-sizing: border-box; }
+    /* FIX: Prevents content flash on load */
+    body.pre-auth > * { display: none; }
     body { font-family: 'Roboto', sans-serif; background-color: var(--md-background-color); color: var(--md-text-primary); margin: 0; line-height: 1.5; -webkit-font-smoothing: antialiased; }
     .hidden { display: none !important; }
     .page { display: none; animation: fadeIn 0.4s ease-in-out; }
@@ -30,6 +32,9 @@
     .card { background: var(--md-surface-color); padding: 24px; border-radius: 8px; box-shadow: var(--md-shadow-1); margin-bottom: 16px; border-top: 4px solid var(--md-accent-color); transition: box-shadow 0.3s ease; }
     .card:hover { box-shadow: var(--md-shadow-2); }
     .card-title { font-size: 20px; font-weight: 500; margin: 0 0 24px 0; color: var(--md-primary-color); }
+    .info-page h3 { font-size: 18px; color: var(--md-primary-color); margin-top: 24px; margin-bottom: 8px; }
+    .info-page p, .info-page li { color: var(--md-text-secondary); }
+    .info-page a { color: var(--md-primary-color); text-decoration: none; }
     #login-container { display: flex; justify-content: center; align-items: center; height: 100vh; padding: 16px; }
     .login-card { border-top: 4px solid var(--md-primary-color); padding: 24px 32px; border-radius: 8px; box-shadow: var(--md-shadow-2); width: 100%; max-width: 400px; text-align: center; }
     .login-card h1 { color: var(--md-primary-color); margin-bottom: 24px; font-weight: 500; }
@@ -129,7 +134,7 @@
     }
 </style>
 </head>
-<body>
+<body class="pre-auth">
     <div id="snackbar"></div>
     <div id="confirmation-modal" class="hidden">
         <div class="modal-content">
@@ -156,7 +161,9 @@
             </div>
         </div>
     </div>
-    <div id="login-container">
+
+    <!-- FIX: Hidden by default to prevent flash on load -->
+    <div id="login-container" class="hidden">
         <div class="login-card">
             <h1>Salary Pro</h1>
             <div class="form-group"><input type="email" id="email" class="form-input" placeholder=" " required><label for="email" class="form-label">Email</label></div>
@@ -168,6 +175,7 @@
             <p id="auth-error"></p>
         </div>
     </div>
+
     <div id="app-container" class="hidden">
         <div id="overlay" class="hidden" onclick="toggleMenu()"></div>
         <div id="side-menu" class="nav-drawer">
@@ -175,11 +183,17 @@
             <ul class="nav-list">
                 <li><a href="#" class="nav-link" data-page="daily-entry-page"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg><span>Daily Entry</span></a></li>
                 <li><a href="#" class="nav-link" data-page="salaries-page"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg><span>Salaries</span></a></li>
-                <li><a href="#" class="nav-link" data-page="agreements-page"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg><span>Agreements</span></a></li>
                 <li><a href="#" class="nav-link" data-page="bonus-page"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"></polyline><rect x="2" y="7" width="20" height="5"></rect><line x1="12" y1="22" x2="12" y2="7"></line><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path></svg><span>Bonus</span></a></li>
                 <li><a href="#" class="nav-link" data-page="arrears-page"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg><span>Arrears</span></a></li>
                 <li><a href="#" class="nav-link" data-page="leaves-page"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line><path d="M17 14h-6"></path></svg><span>Leaves</span></a></li>
                 <li><a href="#" class="nav-link" data-page="settings-page"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg><span>Settings</span></a></li>
+                
+                <!-- NEW: Divider and new links -->
+                <li style="padding: 8px 16px;"><hr style="border: none; border-top: 1px solid var(--md-divider-color);"></li>
+                <li><a href="#" class="nav-link" data-page="profile-page"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span>Profile</span></a></li>
+                <li><a href="#" class="nav-link" data-page="how-to-use-page"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg><span>How to Use</span></a></li>
+                <li><a href="#" class="nav-link" data-page="terms-page"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="15" x2="15" y2="15"></line></svg><span>Terms of Use</span></a></li>
+                <li><a href="#" class="nav-link" data-page="privacy-policy-page"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg><span>Privacy Policy</span></a></li>
             </ul>
             <div style="padding: 16px;"><button id="menu-logout-btn" class="btn secondary" style="width:100%;">Logout</button></div>
         </div>
@@ -199,6 +213,12 @@
                 <div id="general-settings-page" class="page"></div>
                 <div id="generate-payroll-page" class="page"></div>
                 <div id="manage-workers-page" class="page"></div>
+
+                <!-- NEW: Containers for new pages -->
+                <div id="profile-page" class="page"></div>
+                <div id="how-to-use-page" class="page"></div>
+                <div id="terms-page" class="page"></div>
+                <div id="privacy-policy-page" class="page"></div>
             </div>
         </main>
         <nav class="bottom-nav">
@@ -229,7 +249,6 @@
         const auth = firebase.auth();
         const database = firebase.database();
         let workerList = [];
-        // MODIFIED: Added permissions property
         let appConfig = { rates: null, settings: null, permissions: null };
         
         // Cycle constants
@@ -269,7 +288,6 @@
         document.getElementById('login-btn').addEventListener('click', () => auth.signInWithEmailAndPassword(document.getElementById('email').value, document.getElementById('password').value).catch(err => document.getElementById('auth-error').textContent = err.message));
         document.getElementById('signup-btn').addEventListener('click', () => auth.createUserWithEmailAndPassword(document.getElementById('email').value, document.getElementById('password').value).catch(err => document.getElementById('auth-error').textContent = err.message));
         
-        // Forgot Password Functionality
         document.getElementById('forgot-password-btn').addEventListener('click', () => {
             document.getElementById('reset-password-modal').classList.remove('hidden');
             document.getElementById('reset-email').value = document.getElementById('email').value;
@@ -282,41 +300,34 @@
         document.getElementById('reset-send-btn').addEventListener('click', () => {
             const email = document.getElementById('reset-email').value;
             const errorElem = document.getElementById('reset-error');
-            
-            if (!email) {
-                errorElem.textContent = "Email address zaroori hai";
-                return;
-            }
-            
+            if (!email) { errorElem.textContent = "Email address zaroori hai"; return; }
             auth.sendPasswordResetEmail(email)
                 .then(() => {
                     showSnackbar('Password reset link aapke email par bhej diya gaya', 'success');
                     document.getElementById('reset-password-modal').classList.add('hidden');
                 })
-                .catch(err => {
-                    errorElem.textContent = err.message;
-                });
+                .catch(err => { errorElem.textContent = err.message; });
         });
         
         auth.onAuthStateChanged(async user => {
             const loginContainer = document.getElementById('login-container');
             const appContainer = document.getElementById('app-container');
             if (user) {
+                await initializeApp();
                 loginContainer.classList.add('hidden');
                 appContainer.classList.remove('hidden');
-                await initializeApp();
             } else {
                 loginContainer.classList.remove('hidden');
                 appContainer.classList.add('hidden');
             }
+            document.body.classList.remove('pre-auth');
         });
 
-        // MODIFIED: initializeApp function updated to load user permissions
         async function initializeApp() {
             document.body.style.cursor = 'wait';
             setupAppListeners();
             await loadAppSettings();
-            await loadUserPermissions(); // NEW: Load user permissions on app start
+            await loadUserPermissions();
             await loadWorkers();
             await loadAgreements();
             await determineCurrentCycle();
@@ -324,19 +335,12 @@
             document.body.style.cursor = 'default';
         }
 
-        // NEW: This entire function is new. It loads user permissions.
         async function loadUserPermissions() {
             const uid = auth.currentUser.uid;
-            
-            // =================================================================
-            // ZAROORI: Yahan "REPLACE_WITH_YOUR_ADMIN_UID" ki jagah apna
-            // Firebase wala Admin User ID paste karein.
             const ADMIN_UID = "bB9n6UHVEvNQitIY2VxoCbVJ29C3"; 
-            // =================================================================
 
-            // Agar login karne wala user admin hai, to usko poora access dein
             if (uid === ADMIN_UID) {
-                appConfig.permissions = { allowedWorkerCount: 999 }; // 999 ka matlab unlimited
+                appConfig.permissions = { allowedWorkerCount: 999 };
                 console.log("Admin logged in. Full access granted.");
                 return;
             }
@@ -344,17 +348,14 @@
             try {
                 const snapshot = await database.ref(`permissions/${uid}`).once('value');
                 if (snapshot.exists() && snapshot.val().allowedWorkerCount) {
-                    // User ki mojooda permission load karein
                     appConfig.permissions = snapshot.val();
                 } else {
-                    // Naye user ke liye, default 1 worker ka access set karein
                     const defaultPermission = { allowedWorkerCount: 1 };
                     await database.ref(`permissions/${uid}`).set(defaultPermission);
                     appConfig.permissions = defaultPermission;
                 }
             } catch (error) {
                 console.error("Permission load karne mein masla:", error.message);
-                // Agar koi ghalti ho, to bhi 1 worker ka access dein
                 appConfig.permissions = { allowedWorkerCount: 1 };
                 showSnackbar("User permissions load nahi ho sakeen.", 'error');
             }
@@ -364,8 +365,8 @@
             const uid = auth.currentUser.uid;
             const defaultSettings = {
                 workerCount: 8,
-                fiscalYearStart: '10-10', // Format: MM-DD
-                agreementStartDate: '2023-10-10', // Format: YYYY-MM-DD
+                fiscalYearStart: '10-10',
+                agreementStartDate: '2023-10-10',
                 enableWagons: true
             };
 
@@ -409,10 +410,9 @@
                 try {
                     await database.ref(`configs/${uid}`).set(settingsToSave);
                     const oldWorkerCount = appConfig.settings.workerCount;
-                    appConfig.settings = settingsToSave; // Update local config
+                    appConfig.settings = settingsToSave;
                     showSnackbar('Settings saved successfully!', 'success');
                     
-                    // If worker count has changed, take user to manage workers page
                     if (oldWorkerCount !== settingsToSave.workerCount) {
                         showPage('manage-workers-page', 'Manage Workers');
                     }
@@ -437,7 +437,6 @@
 
         async function loadWorkers() {
             const uid = auth.currentUser.uid;
-            // Default names are only for initial setup, the count comes from settings
             const defaultWorkers = ["Khushi", "Anwar", "Mumtaz", "Ameer", "Nawaz", "Hussain", "Latif", "Rabdina"];
             try {
                 const snapshot = await database.ref(`workers/${uid}`).once('value');
@@ -445,7 +444,6 @@
                     workerList = snapshot.val();
                     if(!Array.isArray(workerList)) throw new Error("Worker data is not an array");
                 } else {
-                    // Set default workers based on the count in settings
                     const count = appConfig.settings.workerCount || 8;
                     const initialWorkers = defaultWorkers.slice(0, count);
                     for(let i=initialWorkers.length; i<count; i++){
@@ -565,7 +563,9 @@
         function showPage(pageId, customTitle) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             const targetPage = document.getElementById(pageId);
-            const mainPageId = ['generate-payroll-page', 'manage-workers-page', 'general-settings-page'].includes(pageId) ? 'settings-page' : pageId;
+            
+            // FIX: Highlights 'Settings' nav item when its sub-pages are active
+            const mainPageId = ['generate-payroll-page', 'manage-workers-page', 'general-settings-page', 'agreements-page'].includes(pageId) ? 'settings-page' : pageId;
             
             const pageLink = document.querySelector(`.nav-link[data-page="${mainPageId}"]`);
             document.getElementById('header-title').textContent = customTitle || (pageLink ? pageLink.querySelector('span').textContent : 'Salary Pro');
@@ -580,7 +580,6 @@
         
         function renderPageContent(pageId) {
             const container = document.getElementById(pageId);
-            // MODIFIED: Also check for permissions
             if (!appConfig.rates || !workerList || !appConfig.settings || !appConfig.permissions) { 
                 container.innerHTML = LOADER_HTML; return; 
             }
@@ -711,18 +710,23 @@
                     calculateAndDisplayLeaves();
                     break;
                 case 'settings-page':
+                    // NEW: Agreements link added here
                     content = `<div class="card" style="padding:0;">
                         <div class="settings-item" onclick="showPage('general-settings-page', 'General Settings')">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-4.44a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8.88z"></path><path d="M18 2v6h6"></path><path d="M12 18v-6"></path><path d="M9 15h6"></path></svg>
                             <span>General Settings</span>
                         </div>
-                        <div class="settings-item" onclick="showPage('generate-payroll-page', 'Generate Payroll')">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
-                            <span>Generate Payroll</span>
-                        </div>
                         <div class="settings-item" onclick="showPage('manage-workers-page', 'Manage Workers')">
                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                             <span>Manage Workers</span>
+                        </div>
+                        <div class="settings-item" onclick="showPage('agreements-page', 'Agreements')">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                            <span>Agreements</span>
+                        </div>
+                        <div class="settings-item" onclick="showPage('generate-payroll-page', 'Generate Payroll')">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+                            <span>Generate Payroll</span>
                         </div>
                     </div>`;
                     container.innerHTML = content;
@@ -732,17 +736,14 @@
                     const [fiscalMonth, fiscalDay] = settings.fiscalYearStart.split('-');
                     content = `<div class="card">
                         <h2 class="card-title">General Application Settings</h2>
-                        
                         <div class="form-group">
                             <input type="number" id="settingWorkerCount" class="form-input" value="${settings.workerCount}" placeholder=" " required>
                             <label for="settingWorkerCount" class="form-label">Number of Workers</label>
                         </div>
-
                         <div class="form-group">
                             <input type="date" id="settingAgreementStart" class="form-select" value="${settings.agreementStartDate}">
                             <label style="top:-10px; font-size:12px; color:var(--md-primary-color);">Agreement Start Date (For Arrears)</label>
                         </div>
-
                         <div class="form-group">
                             <p style="color: var(--md-text-secondary); font-size: 14px; margin-bottom: 8px;">Fiscal Year Start (For Bonus & Leaves)</p>
                             <div style="display:flex; gap:16px;">
@@ -754,12 +755,10 @@
                                 </div>
                             </div>
                         </div>
-
                         <label style="display:flex; align-items:center; width:100%; padding: 12px 4px; cursor:pointer;">
                             <input type="checkbox" id="settingEnableWagons" ${settings.enableWagons ? 'checked' : ''}>
                             <span style="margin-left:8px;">Enable Wagon Feature</span>
                         </label>
-
                         <button onclick="saveAppSettings()" class="btn primary" style="width:100%; margin-top: 16px;">Save Settings</button>
                     </div>`;
                     container.innerHTML = content;
@@ -790,6 +789,88 @@
                         ${workerInputsHTML}
                         <button onclick="saveWorkerNames()" class="btn primary" style="width:100%; margin-top: 16px;">Save Worker Names</button>
                       </div>`;
+                    container.innerHTML = content;
+                    break;
+                
+                // NEW: Content for new pages
+                case 'profile-page':
+                    content = `<div class="card">
+                        <h2 class="card-title">My Profile</h2>
+                        <div class="form-group">
+                           <input type="email" class="form-input" value="${auth.currentUser.email}" disabled>
+                           <label class="form-label" style="top:-10px; font-size:12px; color:var(--md-primary-color);">Email Address</label>
+                        </div>
+                        <p style="font-size: 14px; color: var(--md-text-secondary);">Yeh aapka login email hai. Password tabdeel karne ke liye, logout kar ke 'Forgot Password' istemal karein.</p>
+                        <button onclick="auth.signOut()" class="btn secondary" style="width:100%; margin-top:16px;">Logout</button>
+                    </div>`;
+                    container.innerHTML = content;
+                    break;
+                case 'how-to-use-page':
+                    content = `<div class="card info-page">
+                        <h2 class="card-title">App Istimal Karne Ka Tarika</h2>
+                        <p>Salary Pro app mein khush amdeed! Yeh app aapki salary, bonus, aur deegar hisaab ko aasan banane ke liye design ki gayi hai.</p>
+                        
+                        <h3>Account Banana</h3>
+                        <p>App kholne par Login screen nazar aayegi. 'SIGN UP' button par click karein, apna email aur password daal kar account banayein.</p>
+                        
+                        <h3>Daily Entry</h3>
+                        <p>Yeh app ka sab se ahem hissa hai. Rozana ka kaam yahan darj karein. 'Tonnage' aur 'Wagons' daal kar 'Calculate & Save' par click karein. Agar chutti hai to 'Rest Day' select karein.</p>
+
+                        <h3>Reports Dekhna</h3>
+                        <p>Menu mein 'Salaries', 'Bonus', 'Arrears' aur 'Leaves' ke pages par aap apne mukammal hisaab kitaab ki reports dekh sakte hain.</p>
+
+                        <h3>Workers Ka Access</h3>
+                        <p>Default taur par, har naye user ko sirf 1 worker ka data nazar aata hai. Agar aapko mazeed workers ka data dekhna hai, to aapko apna plan upgrade karwana hoga.</p>
+                        
+                        <h3>Plan Upgrade Kaise Karein</h3>
+                        <p>Mazeed workers ka data dekhne ke liye, neeche diye gaye email par hum se rabta karein. Hum aapko mukhtalif plans ki tafseelat faraham kareinge.</p>
+                        <p><b>Rabta Email:</b> <a href="mailto:khushipfs@gmail.com">khushipfs@gmail.com</a></p>
+                    </div>`;
+                    container.innerHTML = content;
+                    break;
+                case 'terms-page':
+                    content = `<div class="card info-page">
+                        <h2 class="card-title">Sharayit o Zawabit (Terms of Use)</h2>
+                        <p>Aakhri Update: 27 July 2024</p>
+                        <p>Is app "Salary Pro" ko istemal karne se pehle, baraye meharbani in sharayit ko ghaur se parhein.</p>
+                        
+                        <h3>Account ki Zimmedari</h3>
+                        <p>Aap apne account ki maloomat (email, password) ko mehfooz rakhne ke khud zimmedar hain. Apne account se hone wali kisi bhi sargarmi ke aap khud jawabdeh honge.</p>
+                        
+                        <h3>Service Ki Farhami</h3>
+                        <p>Yeh app aapko salary management ki sahoolat faraham karti hai. Default plan mein 1 worker ka data shamil hai. Mazeed workers ke liye aapko plan upgrade karna hoga, jis ke liye aap hum se diye gaye email par rabta kar sakte hain.</p>
+                        
+                        <h3>Zimmedari Se Inkaar (Disclaimer of Liability)</h3>
+                        <p><b>Hum aapke data ko mehfooz rakhne ke liye har mumkin koshish karte hain aur iske liye Firebase jaisi mehfooz technology istemal karte hain. Taham, kisi bhi kism ki technical kharabi, server ke masle, hacking, ya aapki apni ghalti ki wajah se agar aapka data zaya (lost) ya kharab ho jata hai, to App Creator (banane wala) kisi bhi soorat mein is nuqsan ka zimmedar nahi hoga. Aap is app ko "jaisa hai" (as-is) ki buniyad par apni zimmedari par istemal kar rahe hain.</b></p>
+                        
+                        <h3>Sharayit mein Tabdeeli</h3>
+                        <p>Hum waqt ke sath in sharayit o zawabit ko tabdeel karne ka haq rakhte hain. Kisi bhi bari tabdeeli ki ittila aapko di jayegi.</p>
+                        
+                        <h3>Rabta Karein</h3>
+                        <p>Agar in sharayit ke mutalliq aapka koi sawal hai, to baraye meharbani hum se is email par rabta karein: <a href="mailto:khushipfs@gmail.com">khushipfs@gmail.com</a>.</p>
+                    </div>`;
+                    container.innerHTML = content;
+                    break;
+                case 'privacy-policy-page':
+                    content = `<div class="card info-page">
+                        <h2 class="card-title">Privacy Policy</h2>
+                        <p>Aapki privacy hamare liye bohot ahem hai.</p>
+                        
+                        <h3>Data Jo Hum Lete Hain</h3>
+                        <p>Hum sirf aapka email address (account banane ke liye) aur woh data jo aap khud app mein darj karte hain (jaise workers ke naam, daily entry, tonnage) store karte hain. Yeh sab data aapke apne personal account ke andar Firebase par mehfooz hota hai.</p>
+                        
+                        <h3>Data Ka Istemal</h3>
+                        <p>Aapka data sirf aapko salary calculation ki services faraham karne ke liye istemal hota hai. Aapke ilawa koi aur shakhs aapka data nahi dekh sakta.</p>
+                        
+                        <h3>Data Sharing</h3>
+                        <p>Hum aapka personal data kisi bhi teesre fard (third-party) ya company ke sath share nahi karte.</p>
+                        
+                        <h3>Data ki Hifazat</h3>
+                        <p>Aapka data Firebase ke secure servers par store hota hai aur is tak rasai (access) sirf aapke apne login ke zariye mumkin hai. Hum ne iski hifazat ke liye munasib iqdamaat kiye hain.</p>
+                        
+                        <h3>Contact</h3>
+                        <p>Privacy policy ke mutalliq mazeed maloomat ke liye, aap hum se rabta kar sakte hain: <a href="mailto:khushipfs@gmail.com">khushipfs@gmail.com</a>.</p>
+                    </div>`;
                     container.innerHTML = content;
                     break;
             }
@@ -980,7 +1061,6 @@
             return allowanceCount;
         }
         
-        // MODIFIED: Payroll generation now respects user permissions
         function generatePayroll() {
             if (!appConfig.rates) { showSnackbar("Data is not ready yet.", 'error'); return; }
             const startDateStr = document.getElementById('payrollStartDate').value;
@@ -1042,7 +1122,6 @@
         }
         
         function getAgreementStartDate() {
-            // Ab yeh function seedha settings se date uthayega
             return appConfig.settings.agreementStartDate || '2023-10-10';
         }
 
@@ -1088,7 +1167,6 @@
             return results;
         }
         
-        // MODIFIED: Automatic arrears now respects user permissions
         async function calculateAutomaticArrears() {
             const resultElem = document.getElementById('automaticArrearsResult');
             resultElem.innerText = 'Calculating... Please wait...';
@@ -1164,7 +1242,6 @@
             resultElem.innerText = resultText;
         }
         
-        // MODIFIED: Manual arrears now respects user permissions
         async function calculateTrueArrears() {
             const resultElem = document.getElementById('arrearsResult');
             const start = document.getElementById('arrearsStartDate').value;
@@ -1238,7 +1315,6 @@
             }
         }
         
-        // MODIFIED: Expected salary now respects user permissions
         async function renderCurrentExpectedSalary() {
             const container = document.getElementById('current-expected-salary-card');
             if (!container) return;
@@ -1307,7 +1383,6 @@
             select.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${today.getDate() <= 15 ? '01' : '16'}`;
         }
 
-        // MODIFIED: Salary summary table now respects user permissions
         async function renderSalariesTable() {
             const container = document.getElementById('salaries-table-container');
             const selectedPeriod = document.getElementById('salariesPeriodSelect').value;
@@ -1369,7 +1444,6 @@
             }
         }
 
-        // MODIFIED: Bonus calculation now respects user permissions
         async function calculateBonus() {
             const resultElem = document.getElementById('bonusResult');
             const bonusYearSelect = document.getElementById('bonusYearSelect');
@@ -1422,7 +1496,6 @@
             }
         }
 
-        // MODIFIED: Leaves display now respects user permissions
         async function calculateAndDisplayLeaves() {
             const resultElem = document.getElementById('leavesResult');
             const yearSelect = document.getElementById('leavesYearSelect');
@@ -1497,4 +1570,4 @@
         }
     </script>
 </body>
-</html>```
+</html>
