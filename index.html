@@ -229,7 +229,8 @@
         const auth = firebase.auth();
         const database = firebase.database();
         let workerList = [];
-        let appConfig = { rates: null, settings: null };
+        // MODIFIED: Added permissions property
+        let appConfig = { rates: null, settings: null, permissions: null };
         
         // Cycle constants
         const WORK_CYCLE = 6;
@@ -310,15 +311,53 @@
             }
         });
 
+        // MODIFIED: initializeApp function updated to load user permissions
         async function initializeApp() {
             document.body.style.cursor = 'wait';
             setupAppListeners();
             await loadAppSettings();
+            await loadUserPermissions(); // NEW: Load user permissions on app start
             await loadWorkers();
             await loadAgreements();
             await determineCurrentCycle();
             showPage('daily-entry-page');
             document.body.style.cursor = 'default';
+        }
+
+        // NEW: This entire function is new. It loads user permissions.
+        async function loadUserPermissions() {
+            const uid = auth.currentUser.uid;
+            
+            // =================================================================
+            // ZAROORI: Yahan "REPLACE_WITH_YOUR_ADMIN_UID" ki jagah apna
+            // Firebase wala Admin User ID paste karein.
+            const ADMIN_UID = "bB9n6UHVEvNQitIY2VxoCbVJ29C3"; 
+            // =================================================================
+
+            // Agar login karne wala user admin hai, to usko poora access dein
+            if (uid === ADMIN_UID) {
+                appConfig.permissions = { allowedWorkerCount: 999 }; // 999 ka matlab unlimited
+                console.log("Admin logged in. Full access granted.");
+                return;
+            }
+
+            try {
+                const snapshot = await database.ref(`permissions/${uid}`).once('value');
+                if (snapshot.exists() && snapshot.val().allowedWorkerCount) {
+                    // User ki mojooda permission load karein
+                    appConfig.permissions = snapshot.val();
+                } else {
+                    // Naye user ke liye, default 1 worker ka access set karein
+                    const defaultPermission = { allowedWorkerCount: 1 };
+                    await database.ref(`permissions/${uid}`).set(defaultPermission);
+                    appConfig.permissions = defaultPermission;
+                }
+            } catch (error) {
+                console.error("Permission load karne mein masla:", error.message);
+                // Agar koi ghalti ho, to bhi 1 worker ka access dein
+                appConfig.permissions = { allowedWorkerCount: 1 };
+                showSnackbar("User permissions load nahi ho sakeen.", 'error');
+            }
         }
         
         async function loadAppSettings() {
@@ -541,7 +580,8 @@
         
         function renderPageContent(pageId) {
             const container = document.getElementById(pageId);
-            if (!appConfig.rates || !workerList || !appConfig.settings) { 
+            // MODIFIED: Also check for permissions
+            if (!appConfig.rates || !workerList || !appConfig.settings || !appConfig.permissions) { 
                 container.innerHTML = LOADER_HTML; return; 
             }
             let content = '';
@@ -940,6 +980,7 @@
             return allowanceCount;
         }
         
+        // MODIFIED: Payroll generation now respects user permissions
         function generatePayroll() {
             if (!appConfig.rates) { showSnackbar("Data is not ready yet.", 'error'); return; }
             const startDateStr = document.getElementById('payrollStartDate').value;
@@ -959,10 +1000,17 @@
                 const monthlyAllowance = appConfig.rates.current.allowance || 0;
                 const allowancePerPeriod = monthlyAllowance / 2;
                 const totalAllowance = numAllowances * allowancePerPeriod;
+                
+                const allowedCount = appConfig.permissions.allowedWorkerCount;
                 let detailsPerWorker = '';
-                workerList.forEach(w => {
-                    detailsPerWorker += `${w.padEnd(10)}: Rs ${(payroll[w] + totalAllowance).toFixed(2)}\n`;
+                workerList.forEach((w, index) => {
+                    if (index < allowedCount) {
+                        detailsPerWorker += `${w.padEnd(10)}: Rs ${(payroll[w] + totalAllowance).toFixed(2)}\n`;
+                    } else {
+                        detailsPerWorker += `${w.padEnd(10)}: Upgrade to View\n`;
+                    }
                 });
+
                 resultElem.innerText = `PAYROLL: ${startDateStr} to ${endDateStr}\n\nTotal Allowance per worker: Rs ${totalAllowance.toFixed(2)}\n\n${detailsPerWorker}`;
             });
         }
@@ -1040,6 +1088,7 @@
             return results;
         }
         
+        // MODIFIED: Automatic arrears now respects user permissions
         async function calculateAutomaticArrears() {
             const resultElem = document.getElementById('automaticArrearsResult');
             resultElem.innerText = 'Calculating... Please wait...';
@@ -1093,23 +1142,29 @@
             let resultText = `AUTOMATIC ARREAR REPORT\nPeriod: ${ARREARS_START_DATE} to ${end}\n`;
             resultText += `Bonus FY: ${agreementStartYear}-${agreementStartYear+1} | Annual Benefits for ${agreementStartYear}\n`;
             resultText += `--------------------------------------\n\n`;
+            
+            const allowedCount = appConfig.permissions.allowedWorkerCount;
+            workerList.forEach((w, index) => {
+                if (index < allowedCount) {
+                    const dailyEarningArrear = hypotheticalDailyTotals[w] - actualDailyTotals[w];
+                    const bonusArrear = newBonus[w].totalBonus - currentBonus[w].totalBonus;
+                    const totalArrear = dailyEarningArrear + allowanceArrears + bonusArrear + annualBenefitsArrear;
 
-            workerList.forEach(w => {
-                const dailyEarningArrear = hypotheticalDailyTotals[w] - actualDailyTotals[w];
-                const bonusArrear = newBonus[w].totalBonus - currentBonus[w].totalBonus;
-                const totalArrear = dailyEarningArrear + allowanceArrears + bonusArrear + annualBenefitsArrear;
-
-                resultText += `${w.padEnd(10)}:\n`;
-                resultText += `  Daily Earning (Sal+Wagon): Rs ${dailyEarningArrear.toFixed(2)}\n`;
-                resultText += `  Allowance Arrear:          Rs ${allowanceArrears.toFixed(2)}\n`;
-                resultText += `  Bonus Arrear:              Rs ${bonusArrear.toFixed(2)}\n`;
-                resultText += `  Annual Benefits Arrear:    Rs ${annualBenefitsArrear.toFixed(2)}\n`;
-                resultText += `  ------------------------------------\n`;
-                resultText += `  >> TOTAL PAYABLE:           Rs ${totalArrear.toFixed(2)} <<\n\n`;
+                    resultText += `${w.padEnd(10)}:\n`;
+                    resultText += `  Daily Earning (Sal+Wagon): Rs ${dailyEarningArrear.toFixed(2)}\n`;
+                    resultText += `  Allowance Arrear:          Rs ${allowanceArrears.toFixed(2)}\n`;
+                    resultText += `  Bonus Arrear:              Rs ${bonusArrear.toFixed(2)}\n`;
+                    resultText += `  Annual Benefits Arrear:    Rs ${annualBenefitsArrear.toFixed(2)}\n`;
+                    resultText += `  ------------------------------------\n`;
+                    resultText += `  >> TOTAL PAYABLE:           Rs ${totalArrear.toFixed(2)} <<\n\n`;
+                } else {
+                    resultText += `${w.padEnd(10)}: Upgrade to View Arrears\n\n`;
+                }
             });
             resultElem.innerText = resultText;
         }
         
+        // MODIFIED: Manual arrears now respects user permissions
         async function calculateTrueArrears() {
             const resultElem = document.getElementById('arrearsResult');
             const start = document.getElementById('arrearsStartDate').value;
@@ -1141,13 +1196,18 @@
             let resultText = `MANUAL ARREARS (NO BONUS/BENEFITS)\nPeriod: ${start} to ${end}\n`;
             resultText += `-----------------------------------\n\n`;
             
-            workerList.forEach(w => {
-                const dailyEarningArrear = hypotheticalTotals[w] - actualTotals[w];
-                const totalArrear = dailyEarningArrear + allowanceArrears;
-                resultText += `${w.padEnd(10)}:\n`;
-                resultText += `  Daily Earning (Sal+Wagon): Rs ${dailyEarningArrear.toFixed(2)}\n`;
-                resultText += `  Allowance Arrear:          Rs ${allowanceArrears.toFixed(2)}\n`;
-                resultText += `  >> TOTAL PAYABLE:          Rs ${totalArrear.toFixed(2)} <<\n\n`;
+            const allowedCount = appConfig.permissions.allowedWorkerCount;
+            workerList.forEach((w, index) => {
+                if (index < allowedCount) {
+                    const dailyEarningArrear = hypotheticalTotals[w] - actualTotals[w];
+                    const totalArrear = dailyEarningArrear + allowanceArrears;
+                    resultText += `${w.padEnd(10)}:\n`;
+                    resultText += `  Daily Earning (Sal+Wagon): Rs ${dailyEarningArrear.toFixed(2)}\n`;
+                    resultText += `  Allowance Arrear:          Rs ${allowanceArrears.toFixed(2)}\n`;
+                    resultText += `  >> TOTAL PAYABLE:          Rs ${totalArrear.toFixed(2)} <<\n\n`;
+                } else {
+                    resultText += `${w.padEnd(10)}: Upgrade to View Arrears\n\n`;
+                }
             });
             resultElem.innerText = resultText;
         }
@@ -1178,6 +1238,7 @@
             }
         }
         
+        // MODIFIED: Expected salary now respects user permissions
         async function renderCurrentExpectedSalary() {
             const container = document.getElementById('current-expected-salary-card');
             if (!container) return;
@@ -1204,7 +1265,16 @@
                     });
                 }
                 const allowance = (appConfig.rates.current.allowance || 0) / 2;
-                let salaryListHTML = workerList.map(w => `<li style="display:flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee;"><span>${w}</span><span style="font-weight: 500; color: var(--md-primary-color);">Rs ${(periodSalaries[w] + allowance).toFixed(2)}</span></li>`).join('');
+                
+                const allowedCount = appConfig.permissions.allowedWorkerCount;
+                let salaryListHTML = workerList.map((w, index) => {
+                    if (index < allowedCount) {
+                        return `<li style="display:flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee;"><span>${w}</span><span style="font-weight: 500; color: var(--md-primary-color);">Rs ${(periodSalaries[w] + allowance).toFixed(2)}</span></li>`;
+                    } else {
+                        return `<li style="display:flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee;"><span>${w}</span><span style="font-weight: 500; color: var(--color-error);">Upgrade to View</span></li>`;
+                    }
+                }).join('');
+
                 container.innerHTML = `<div class="card"><h2 class="card-title">${periodTitle}</h2><ul style="list-style:none; padding: 0; margin:0;">${salaryListHTML}</ul></div>`;
             } catch(error) {
                 container.innerHTML = `<div class="card"><p style="color:red;">Error: ${error.message}</p></div>`;
@@ -1237,6 +1307,7 @@
             select.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${today.getDate() <= 15 ? '01' : '16'}`;
         }
 
+        // MODIFIED: Salary summary table now respects user permissions
         async function renderSalariesTable() {
             const container = document.getElementById('salaries-table-container');
             const selectedPeriod = document.getElementById('salariesPeriodSelect').value;
@@ -1264,7 +1335,15 @@
                     tableHTML = `<style>.sal-tbl{width:100%;border-collapse:collapse;font-size:14px;}.sal-tbl th, .sal-tbl td{padding:8px 12px;border:1px solid #eee;text-align:left;}.sal-tbl th{font-weight:500;background:#f9f9f9}</style><table class="sal-tbl"><thead><tr><th>Date</th><th>Tons</th>${wagonHeader}<th>Payment</th></tr></thead><tbody>${tableRows}</tbody></table>`;
                     
                     const allowance = (appConfig.rates.current.allowance || 0) / 2;
-                    let salaryListHTML = workerList.map(w => `<li style="display:flex;justify-content:space-between;align-items:center;padding:10px 4px;border-bottom:1px solid #eee;"><span style="font-weight:500;">${w}:</span><span>Rs ${(periodSalaries[w]+allowance).toFixed(2)}</span></li>`).join('');
+                    const allowedCount = appConfig.permissions.allowedWorkerCount;
+                    let salaryListHTML = workerList.map((w, index) => {
+                        if (index < allowedCount) {
+                           return `<li style="display:flex;justify-content:space-between;align-items:center;padding:10px 4px;border-bottom:1px solid #eee;"><span style="font-weight:500;">${w}:</span><span>Rs ${(periodSalaries[w]+allowance).toFixed(2)}</span></li>`;
+                        } else {
+                           return `<li style="display:flex;justify-content:space-between;align-items:center;padding:10px 4px;border-bottom:1px solid #eee;"><span style="font-weight:500;">${w}:</span><span style="color:var(--color-error);">Upgrade to View</span></li>`;
+                        }
+                    }).join('');
+
                     summaryHTML = `<div class="card" style="margin-top:24px;"><h3 class="card-title" style="font-size:16px; margin-bottom:16px;">Salary Summary</h3><ul style="list-style:none; padding:0; margin:0;">${salaryListHTML}</ul></div>`;
                 }
                 container.innerHTML = tableHTML + summaryHTML;
@@ -1290,6 +1369,7 @@
             }
         }
 
+        // MODIFIED: Bonus calculation now respects user permissions
         async function calculateBonus() {
             const resultElem = document.getElementById('bonusResult');
             const bonusYearSelect = document.getElementById('bonusYearSelect');
@@ -1310,16 +1390,21 @@
             resultText += `(Based on Current Agreement)\n`;
             resultText += `--------------------------------------\n\n`;
             
-            workerList.forEach(w => {
-                const { averageMonthlySalary, gratuity, leaveBonus, totalBonus } = bonusData[w];
-                const layoffRate = appConfig.rates.current.layoffRate || 1;
-                const paidLeavesRemaining = leaveBonus > 0 ? leaveBonus / layoffRate : 0;
+            const allowedCount = appConfig.permissions.allowedWorkerCount;
+            workerList.forEach((w, index) => {
+                if (index < allowedCount) {
+                    const { averageMonthlySalary, gratuity, leaveBonus, totalBonus } = bonusData[w];
+                    const layoffRate = appConfig.rates.current.layoffRate || 1;
+                    const paidLeavesRemaining = leaveBonus > 0 ? leaveBonus / layoffRate : 0;
 
-                resultText += `${w.padEnd(10)}:\n`;
-                resultText += `  Avg Monthly Salary (Bonus):  Rs ${averageMonthlySalary.toFixed(2)}\n`;
-                resultText += `  Gratuity Amount:             Rs ${gratuity.toFixed(2)}\n`;
-                resultText += `  Paid Leaves Bonus (${paidLeavesRemaining.toFixed(0)} days): Rs ${leaveBonus.toFixed(2)}\n`;
-                resultText += `  >> TOTAL PAYABLE:           Rs ${totalBonus.toFixed(2)} <<\n\n`;
+                    resultText += `${w.padEnd(10)}:\n`;
+                    resultText += `  Avg Monthly Salary (Bonus):  Rs ${averageMonthlySalary.toFixed(2)}\n`;
+                    resultText += `  Gratuity Amount:             Rs ${gratuity.toFixed(2)}\n`;
+                    resultText += `  Paid Leaves Bonus (${paidLeavesRemaining.toFixed(0)} days): Rs ${leaveBonus.toFixed(2)}\n`;
+                    resultText += `  >> TOTAL PAYABLE:           Rs ${totalBonus.toFixed(2)} <<\n\n`;
+                } else {
+                    resultText += `${w.padEnd(10)}:  Upgrade to View Details\n\n`;
+                }
             });
             resultElem.innerText = resultText;
         }
@@ -1337,6 +1422,7 @@
             }
         }
 
+        // MODIFIED: Leaves display now respects user permissions
         async function calculateAndDisplayLeaves() {
             const resultElem = document.getElementById('leavesResult');
             const yearSelect = document.getElementById('leavesYearSelect');
@@ -1361,13 +1447,19 @@
                     workerList.forEach(w => { if (!present.includes(w)) leaveCounts[w]++; });
                 }
             });
+
             let resultHTML = '<div class="grid-layout">';
-            workerList.forEach(w => {
-                const totalLeavesTaken = leaveCounts[w] || 0;
-                const unpaidLeavesTaken = Math.min(totalLeavesTaken, 20);
-                const paidLeavesTaken = Math.max(0, totalLeavesTaken - 20);
-                const paidLeavesRemaining = Math.max(0, 12 - paidLeavesTaken);
-                resultHTML += `<div class="card" style="border-top-color: var(--md-primary-color);"><h3 class="card-title" style="margin-bottom:12px;">${w}</h3><ul style="list-style:none;padding:0;margin:0;font-size:14px;"><li style="display:flex;justify-content:space-between;padding:6px 0;"><span>Total Leaves:</span><span style="font-weight:bold;">${totalLeavesTaken}</span></li><li style="display:flex;justify-content:space-between;padding:6px 0;color:#757575;"><span>Unpaid Taken:</span><span>${unpaidLeavesTaken}/20</span></li><li style="display:flex;justify-content:space-between;padding:6px 0;color:#757575;"><span>Paid Taken:</span><span>${paidLeavesTaken}/12</span></li><hr style="border:none;border-top:1px solid #eee;margin:8px 0;"><li style="display:flex;justify-content:space-between;padding:6px 0;font-weight:bold;"><span>Paid Leaves Left:</span><span>${paidLeavesRemaining}</span></li></ul></div>`;
+            const allowedCount = appConfig.permissions.allowedWorkerCount;
+            workerList.forEach((w, index) => {
+                if (index < allowedCount) {
+                    const totalLeavesTaken = leaveCounts[w] || 0;
+                    const unpaidLeavesTaken = Math.min(totalLeavesTaken, 20);
+                    const paidLeavesTaken = Math.max(0, totalLeavesTaken - 20);
+                    const paidLeavesRemaining = Math.max(0, 12 - paidLeavesTaken);
+                    resultHTML += `<div class="card" style="border-top-color: var(--md-primary-color);"><h3 class="card-title" style="margin-bottom:12px;">${w}</h3><ul style="list-style:none;padding:0;margin:0;font-size:14px;"><li style="display:flex;justify-content:space-between;padding:6px 0;"><span>Total Leaves:</span><span style="font-weight:bold;">${totalLeavesTaken}</span></li><li style="display:flex;justify-content:space-between;padding:6px 0;color:#757575;"><span>Unpaid Taken:</span><span>${unpaidLeavesTaken}/20</span></li><li style="display:flex;justify-content:space-between;padding:6px 0;color:#757575;"><span>Paid Taken:</span><span>${paidLeavesTaken}/12</span></li><hr style="border:none;border-top:1px solid #eee;margin:8px 0;"><li style="display:flex;justify-content:space-between;padding:6px 0;font-weight:bold;"><span>Paid Leaves Left:</span><span>${paidLeavesRemaining}</span></li></ul></div>`;
+                } else {
+                    resultHTML += `<div class="card" style="border-top-color: var(--color-error);"><h3 class="card-title" style="margin-bottom:12px;">${w}</h3><p>Upgrade your plan to view leave details for this worker.</p></div>`;
+                }
             });
             resultElem.innerHTML = resultHTML + '</div>';
         }
@@ -1405,4 +1497,4 @@
         }
     </script>
 </body>
-</html>
+</html>```
