@@ -22,7 +22,6 @@
         --color-error: #D32F2F;
     }
     *, *::before, *::after { box-sizing: border-box; }
-    /* FIX: Prevents content flash on load */
     body.pre-auth > * { display: none; }
     body { font-family: 'Roboto', sans-serif; background-color: var(--md-background-color); color: var(--md-text-primary); margin: 0; line-height: 1.5; -webkit-font-smoothing: antialiased; }
     .hidden { display: none !important; }
@@ -145,7 +144,6 @@
             </div>
         </div>
     </div>
-    <!-- Reset Password Modal -->
     <div id="reset-password-modal" class="hidden">
         <div class="modal-content">
             <h2 style="color:var(--md-primary-color); margin-top:0;">Reset Password</h2>
@@ -162,7 +160,6 @@
         </div>
     </div>
 
-    <!-- FIX: Hidden by default to prevent flash on load -->
     <div id="login-container" class="hidden">
         <div class="login-card">
             <h1>Salary Pro</h1>
@@ -890,7 +887,8 @@
         
         function _calculateSingleDay(record, agreementRates, leaveCounts = {}) {
             const { tonRate, restRate, layoffRate, perWagonRate } = agreementRates;
-            const { type, tonnage, presentWorkers } = record;
+            const { type, tonnage, wagons } = record;
+            const presentWorkers = record.presentWorkers || [];
             const presentCount = presentWorkers.length;
 
             let dailyEarnings = {};
@@ -903,48 +901,56 @@
 
             const absentWorkers = workerList.filter(w => !presentWorkers.includes(w));
             
-            // Step 1: Calculate pay for absent workers and total penalty
-            const usePenaltyRule = appConfig.settings.enableLeavePenalty === true;
+            // Calculate penalty amount first
             let totalPenalty = 0;
+            if (appConfig.settings.enableLeavePenalty) {
+                absentWorkers.forEach(w => {
+                    const leaves = leaveCounts[w] || 0;
+                    if (leaves >= 32) {
+                        totalPenalty += (appConfig.settings.leavePenaltyAmount || 231);
+                    }
+                });
+            }
+            const penaltyPerWorker = presentCount > 0 ? totalPenalty / presentCount : 0;
+
+            // Handle absent workers' pay
             absentWorkers.forEach(w => {
-                const leaves = leaveCounts[w] || 0;
-                if (usePenaltyRule && leaves >= 32) {
-                    dailyEarnings[w] = 0; // No pay
-                    totalPenalty += (appConfig.settings.leavePenaltyAmount || 231);
+                if (appConfig.settings.enableLeavePenalty && (leaveCounts[w] || 0) >= 32) {
+                    dailyEarnings[w] = 0;
                 } else {
-                    dailyEarnings[w] = layoffRate; // Normal layoff pay
+                    dailyEarnings[w] = layoffRate;
                 }
             });
 
-            if (presentCount === 0) {
-                return dailyEarnings; // All absent, return their calculated pay
-            }
+            // Handle present workers' pay
+            if (presentCount > 0) {
+                const tonnagePay = (tonnage * tonRate) / presentCount;
+                const wagonPay = appConfig.settings.enableWagons ? ((wagons || 0) * perWagonRate) / presentCount : 0;
 
-            // Step 2: Calculate for present workers
-            const penaltyPerWorker = totalPenalty / presentCount;
-            const tonnagePay = (tonnage * tonRate) / presentCount;
-            const wagonPay = appConfig.settings.enableWagons ? ((record.wagons || 0) * perWagonRate) / presentCount : 0;
-            const baseTonnagePay = tonnagePay + wagonPay; // Pure earning from work
+                let grossPay;
 
-            let perWorkerFinalPay = 0;
-
-            if (type === 'work') {
-                const effectivePay = baseTonnagePay - penaltyPerWorker;
-                perWorkerFinalPay = Math.max(effectivePay, layoffRate);
-            } else if (type === 'special_overtime') {
-                // Check if Tonnage pay is better than layoff rate
-                if (baseTonnagePay > layoffRate) {
-                    // High tonnage OT rule: (Tonnage Dihaari * 2) + LayoffRate - Penalty
-                    perWorkerFinalPay = (baseTonnagePay * 2) + layoffRate - penaltyPerWorker;
-                } else {
-                    // Low tonnage OT rule: Guaranteed LayoffRate * 3. NO PENALTY DEDUCTION.
-                    perWorkerFinalPay = layoffRate * 3;
+                if (type === 'special_overtime') {
+                    const corePay = Math.max(tonnagePay, layoffRate);
+                    grossPay = (corePay * 2) + layoffRate;
+                } else { // 'work' day
+                    grossPay = tonnagePay;
                 }
+                
+                grossPay += wagonPay;
+                
+                let netPay = grossPay - penaltyPerWorker;
+                
+                const finalPay = Math.max(netPay, layoffRate);
+
+                presentWorkers.forEach(w => {
+                    dailyEarnings[w] = finalPay;
+                });
+            } else { 
+                // All absent, but not a penalty day. They get layoffRate.
+                absentWorkers.forEach(w => {
+                    dailyEarnings[w] = layoffRate;
+                });
             }
-            
-            presentWorkers.forEach(w => {
-                dailyEarnings[w] = perWorkerFinalPay;
-            });
 
             return dailyEarnings;
         }
@@ -971,8 +977,8 @@
                 type: dayType, 
                 tonnage: dayType === 'rest' ? 0 : tonnage,
                 presentCount: presentWorkers.length, 
-                presentWorkers, 
-                isAutoGenerated: false // Manual entries are never auto-generated
+                presentWorkers,
+                isAutoGenerated: false
             };
 
             if(appConfig.settings.enableWagons) {
@@ -982,20 +988,20 @@
             const earnings = _calculateSingleDay(recordToSave, appConfig.rates.current, leaveCounts);
             recordToSave.earnings = earnings;
             
-            // Determine perWorkerEarning for display in history table
-            if(dayType === 'rest') {
-                recordToSave.perWorkerEarning = appConfig.rates.current.restRate;
+            let perWorkerEarning = 0;
+            if (dayType === 'rest') {
+                perWorkerEarning = appConfig.rates.current.restRate;
             } else if (presentWorkers.length > 0) {
-                 recordToSave.perWorkerEarning = earnings[presentWorkers[0]] || 0;
-            } else { // All absent on a work day
-                 recordToSave.perWorkerEarning = appConfig.rates.current.layoffRate;
+                perWorkerEarning = earnings[presentWorkers[0]] || 0;
+            } else {
+                perWorkerEarning = appConfig.rates.current.layoffRate;
             }
+            recordToSave.perWorkerEarning = perWorkerEarning;
             
             await database.ref(`salaries/${auth.currentUser.uid}/${date}`).set(recordToSave);
             updateCycleState(dayType);
             showSnackbar('Daily entry saved successfully!', 'success');
             loadHistory();
-            renderCurrentExpectedSalary(); // Refresh current salary card
         }
         
         function updateCycleState(dayType) {
@@ -1104,25 +1110,20 @@
                     currentDate.setDate(currentDate.getDate() + 1);
                 }
 
-                if (daysToFill.length === 0) return;
-
-                const updates = {};
                 for (const date of daysToFill) {
                     const dateStr = date.toISOString().split('T')[0];
                     const leaveCounts = await _getLeaveCountsUpToDate(dateStr);
-                    const record = { date: dateStr, type: 'work', tonnage: 0, presentWorkers: [], presentCount: 0, isAutoGenerated: true };
-                    if(appConfig.settings.enableWagons) record.wagons = 0;
+                    const record = { date: dateStr, type: 'work', tonnage: 0, wagons: 0, presentWorkers: [], presentCount: 0, isAutoGenerated: true };
                     
                     const earnings = _calculateSingleDay(record, appConfig.rates.current, leaveCounts);
                     record.earnings = earnings;
                     record.perWorkerEarning = appConfig.rates.current.layoffRate;
-                    updates[`salaries/${uid}/${dateStr}`] = record;
+                    await database.ref(`salaries/${uid}/${dateStr}`).set(record);
                 }
-
-                await database.ref().update(updates);
-                showSnackbar(`${daysToFill.length} missing days filled with default entries`, 'success');
-                loadHistory();
-
+                if (daysToFill.length > 0) {
+                    showSnackbar(`${daysToFill.length} missing days filled automatically.`, 'success');
+                    loadHistory();
+                }
             } catch (error) {
                 console.error("Error filling missing days:", error);
                 showSnackbar("Error filling missing days", 'error');
@@ -1199,16 +1200,17 @@
                 const enableWagons = appConfig.settings.enableWagons;
                 let rows = '';
                 const records = snapshot.val();
-                const sortedKeys = Object.keys(records).sort((a, b) => new Date(b) - new Date(a));
+                const sortedKeys = Object.keys(records).sort((a, b) => new Date(a) - new Date(b));
                 sortedKeys.forEach(key => {
                     const rec = records[key];
-                    const tonnageCell = rec.type === 'rest' ? '--' : (rec.tonnage || 0);
-                    const wagonCellVal = rec.type === 'rest' ? '--' : (rec.wagons || 0);
+                    const tonnageCell = rec.type === 'rest' ? '–' : (rec.tonnage || 0);
+                    const wagonCellVal = rec.type === 'rest' ? '–' : (rec.wagons || 0);
                     const wagonCellHTML = enableWagons ? `<td>${wagonCellVal}</td>` : '';
-                    rows += `<tr><td>${rec.date}</td><td>${tonnageCell}</td>${wagonCellHTML}<td>${(rec.perWorkerEarning || 0).toFixed(2)}</td></tr>`;
+                    const payment = rec.perWorkerEarning || 0;
+                    rows += `<tr><td>${new Date(rec.date + 'T00:00:00').toLocaleDateString('en-GB', {day:'2-digit', month:'2-digit'})}</td><td>${tonnageCell}</td>${wagonCellHTML}<td>${payment.toFixed(2)}</td></tr>`;
                 });
                 const wagonHeader = enableWagons ? `<th>Wagons</th>` : '';
-                container.innerHTML = `<table style="width:100%; border-collapse:collapse;"><thead><tr><th>Date</th><th>Tons</th>${wagonHeader}<th>Earning</th></tr></thead><tbody>${rows}</tbody></table>`;
+                container.innerHTML = `<table style="width:100%; border-collapse:collapse; text-align:center;"><thead><tr><th>Date</th><th>Tons</th>${wagonHeader}<th>Earning</th></tr></thead><tbody>${rows}</tbody></table>`;
             });
         }
         
@@ -1517,19 +1519,17 @@
                     Object.keys(records).sort((a,b) => new Date(a) - new Date(b)).forEach(key => {
                         const rec = records[key];
                         if (rec && rec.earnings) workerList.forEach(w => periodSalaries[w] += rec.earnings[w] || 0);
-
-                        const tonnageCell = rec.type === 'rest' ? '--' : (rec.tonnage || '--');
-                        const wagonCellVal = rec.type === 'rest' ? '--' : (rec.wagons || 0);
-                        const wagonCellHTML = enableWagons ? `<td>${wagonCellVal}</td>` : '';
                         
-                        let payment = (rec.perWorkerEarning||0);
-                        if(rec.type === 'rest') payment = appConfig.rates.current.restRate
+                        const tonnageCell = rec.type === 'rest' ? '–' : (rec.tonnage || 0);
+                        const wagonCellVal = rec.type === 'rest' ? '–' : (rec.wagons || 0);
+                        const wagonCellHTML = enableWagons ? `<td>${wagonCellVal}</td>` : '';
+                        const payment = rec.perWorkerEarning || 0;
                         
                         tableRows += `<tr><td>${new Date(rec.date + 'T00:00:00').toLocaleDateString('en-GB', {day:'2-digit', month:'2-digit'})}</td><td>${tonnageCell}</td>${wagonCellHTML}<td>${payment.toFixed(2)}</td></tr>`;
                     });
 
                     const wagonHeader = enableWagons ? '<th>Wagons</th>' : '';
-                    tableHTML = `<style>.sal-tbl{width:100%;border-collapse:collapse;font-size:14px;}.sal-tbl th, .sal-tbl td{padding:8px 12px;border:1px solid #eee;text-align:left;}.sal-tbl th{font-weight:500;background:#f9f9f9}</style><table class="sal-tbl"><thead><tr><th>Date</th><th>Tons</th>${wagonHeader}<th>Payment</th></tr></thead><tbody>${tableRows}</tbody></table>`;
+                    tableHTML = `<style>.sal-tbl{width:100%;border-collapse:collapse;font-size:14px;text-align:center;}.sal-tbl th, .sal-tbl td{padding:8px 12px;border:1px solid #eee;}.sal-tbl th{font-weight:500;background:#f9f9f9}</style><table class="sal-tbl"><thead><tr><th>Date</th><th>Tons</th>${wagonHeader}<th>Payment</th></tr></thead><tbody>${tableRows}</tbody></table>`;
                     
                     const allowance = (appConfig.rates.current.allowance || 0) / 2;
                     const allowedCount = appConfig.permissions.allowedWorkerCount;
