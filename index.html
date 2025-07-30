@@ -228,9 +228,20 @@
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-database.js"></script>
     <script>
-        // Firebase configuration
+        // === YEH NAYA AUR MEHFOOZ CODE HAI ===
+
+// Yeh function Netlify se mehfooz tareeqe se API key laayega
+async function initializeFirebaseAndStartApp() {
+    try {
+        const response = await fetch('/.netlify/functions/get-api-key');
+        if (!response.ok) {
+            throw new Error('API key haasil karne mein masla huwa.');
+        }
+        const keyData = await response.json();
+
+        // Firebase ki configuration ab key ke sath tayyar hai
         const firebaseConfig = {
-            apiKey: "AIzaSyAya9Kjvrqrvpm7JuXU7aa_qyBrJKtjLyo",
+            apiKey: keyData.apiKey, // <-- Key ab mehfooz tareeqe se yahan aaegi
             authDomain: "salary-d19b0.firebaseapp.com",
             databaseURL: "https://salary-d19b0-default-rtdb.asia-southeast1.firebasedatabase.app",
             projectId: "salary-d19b0",
@@ -238,8 +249,21 @@
             messagingSenderId: "572149024584",
             appId: "1:572149024584:web:bbd70fc34d2ef11679d57d"
         };
-        
+
+        // Firebase ko is configuration se shuru karo
         firebase.initializeApp(firebaseConfig);
+
+        // Ab baaqi ki app ko shuru karo (Yeh function aapki file mein pehle se maujood hai)
+        initializeApp();
+
+    } catch (error) {
+        console.error("Firebase initialize nahi ho saka:", error);
+        document.body.innerHTML = '<h1>Error: Application load nahi ho saki.</h1><p>Admin se rabta karein.</p>';
+    }
+}
+
+// === SAB SE PEHLE YEH FUNCTION CHALAO ===
+initializeFirebaseAndStartApp();
         
         const auth = firebase.auth();
         const database = firebase.database();
