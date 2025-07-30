@@ -367,7 +367,9 @@
                 workerCount: 8,
                 fiscalYearStart: '10-10',
                 agreementStartDate: '2023-10-10',
-                enableWagons: true
+                enableWagons: true,
+                enableLeavePenalty: false, 
+                leavePenaltyAmount: 231 // NEW: Default penalty amount
             };
 
             try {
@@ -403,7 +405,9 @@
                 workerCount: workerCount,
                 agreementStartDate: agreementStartDate,
                 fiscalYearStart: `${document.getElementById('settingFiscalMonth').value}-${document.getElementById('settingFiscalDay').value}`,
-                enableWagons: document.getElementById('settingEnableWagons').checked
+                enableWagons: document.getElementById('settingEnableWagons').checked,
+                enableLeavePenalty: document.getElementById('settingEnableLeavePenalty').checked,
+                leavePenaltyAmount: parseFloat(document.getElementById('settingLeavePenaltyAmount').value) || 231 // NEW: Save penalty amount
             };
 
             showConfirmationModal('Are you sure you want to save these settings? This might require updating worker names.', async () => {
@@ -759,9 +763,23 @@
                             <input type="checkbox" id="settingEnableWagons" ${settings.enableWagons ? 'checked' : ''}>
                             <span style="margin-left:8px;">Enable Wagon Feature</span>
                         </label>
+                        <label style="display:flex; align-items:center; width:100%; padding: 12px 4px; cursor:pointer;">
+                            <input type="checkbox" id="settingEnableLeavePenalty" ${settings.enableLeavePenalty ? 'checked' : ''}>
+                            <span style="margin-left:8px;">Enable Leave Penalty Rule</span>
+                        </label>
+                        <div id="leave-penalty-amount-group" class="${settings.enableLeavePenalty ? '' : 'hidden'}">
+                            <div class="form-group">
+                                <input type="number" id="settingLeavePenaltyAmount" class="form-input" value="${settings.leavePenaltyAmount || 231}" placeholder=" " required>
+                                <label for="settingLeavePenaltyAmount" class="form-label">Leave Penalty Amount (Rs)</label>
+                            </div>
+                        </div>
                         <button onclick="saveAppSettings()" class="btn primary" style="width:100%; margin-top: 16px;">Save Settings</button>
                     </div>`;
                     container.innerHTML = content;
+                    // NEW: Add event listener to toggle visibility
+                    document.getElementById('settingEnableLeavePenalty').addEventListener('change', (e) => {
+                        document.getElementById('leave-penalty-amount-group').classList.toggle('hidden', !e.target.checked);
+                    });
                     break;
                 case 'generate-payroll-page':
                     const monthlyAllowance = appConfig.rates.current.allowance;
@@ -878,38 +896,67 @@
         
         function toggleMenu() { document.getElementById('side-menu').classList.toggle('open'); document.getElementById('overlay').classList.toggle('hidden'); }
         
-        function _calculateSingleDay(record, agreementRates) {
+        // UPDATED to handle new leave penalty rule
+        function _calculateSingleDay(record, agreementRates, leaveCounts = {}) {
             const { tonRate, restRate, layoffRate, perWagonRate } = agreementRates;
             const { type, tonnage } = record;
-            const present = Array.isArray(record.presentWorkers) ? record.presentWorkers : [];
-            const presentCount = present.length > 0 ? present.length : (record.presentCount || 0);
-            
-            let dailyEarnings = {};
-            workerList.forEach(w => dailyEarnings[w] = 0);
+            const presentWorkers = Array.isArray(record.presentWorkers) ? record.presentWorkers : [];
+            const presentCount = presentWorkers.length;
 
+            let dailyEarnings = {};
+            workerList.forEach(w => dailyEarnings[w] = 0); // Initialize
+
+            // Handle Rest Day
             if (type === 'rest') {
                 workerList.forEach(w => { dailyEarnings[w] = restRate; });
                 return dailyEarnings;
             }
 
-            if (presentCount === 0) {
-                workerList.forEach(w => { dailyEarnings[w] = layoffRate; });
-                return dailyEarnings;
-            }
+            const absentWorkers = workerList.filter(w => !presentWorkers.includes(w));
 
+            // Handle All Absent Case
+            if (presentCount === 0) {
+                 absentWorkers.forEach(w => { dailyEarnings[w] = layoffRate; });
+                 return dailyEarnings; // No penalty if no one is present to be penalized
+            }
+            
+            // --- Main Logic for Work/Overtime Day ---
+            
+            // 1. Calculate base earnings for PRESENT workers
             let tonnagePay = (tonnage * tonRate) / presentCount;
             let wagonPay = appConfig.settings.enableWagons ? ((record.wagons || 0) * perWagonRate) / presentCount : 0;
-            
             let basePay = Math.max(tonnagePay, layoffRate);
             let perWorkerPay = basePay + wagonPay;
 
             if (type === 'special_overtime') {
                 perWorkerPay = (basePay * 2) + wagonPay;
             }
-
-            workerList.forEach(w => {
-                dailyEarnings[w] = present.includes(w) ? perWorkerPay : layoffRate;
+            
+            presentWorkers.forEach(w => {
+                dailyEarnings[w] = perWorkerPay;
             });
+
+            // 2. Calculate earnings for ABSENT workers & determine total penalty
+            let totalPenalty = 0;
+            const usePenaltyRule = appConfig.settings.enableLeavePenalty === true;
+            
+            absentWorkers.forEach(w => {
+                const leaves = leaveCounts[w] || 0;
+                if (usePenaltyRule && leaves >= 32) {
+                    dailyEarnings[w] = 0; // No pay for extra leave
+                    totalPenalty += (appConfig.settings.leavePenaltyAmount || 231); // USE SETTING
+                } else {
+                    dailyEarnings[w] = layoffRate; // Normal layoff pay
+                }
+            });
+
+            // 3. Apply penalty to PRESENT workers
+            if (totalPenalty > 0 && presentCount > 0) {
+                const penaltyPerWorker = totalPenalty / presentCount;
+                presentWorkers.forEach(w => {
+                    dailyEarnings[w] -= penaltyPerWorker;
+                });
+            }
 
             return dailyEarnings;
         }
@@ -918,16 +965,21 @@
             showConfirmationModal('Are you sure you want to save this daily entry?', calculateAndSave);
         }
         
+        // UPDATED to calculate leave counts before saving
         async function calculateAndSave() {
             if (!appConfig.rates) { showSnackbar("Data not ready. Please wait.", 'error'); return; }
             const date = document.getElementById('entryDate').value;
             if (!date) { showSnackbar("Please select a date.", 'error'); return; }
+            
             const dayType = document.getElementById('dayType').value;
             const tonnage = parseFloat(document.getElementById('tonnage').value) || 0;
             const presentWorkers = Array.from(document.querySelectorAll('.worker-checkbox:checked')).map(cb => cb.value);
 
             if (presentWorkers.length === 0 && dayType !== 'rest') { showSnackbar("Select present workers for a work day.", 'error'); return; }
             
+            // Get leave counts up to the day before this entry
+            const leaveCounts = await _getLeaveCountsUpToDate(date);
+
             const recordToSave = { 
                 date, 
                 type: dayType, 
@@ -940,7 +992,7 @@
                 recordToSave.wagons = parseFloat(document.getElementById('wagons').value) || 0;
             }
             
-            const earnings = _calculateSingleDay(recordToSave, appConfig.rates.current);
+            const earnings = _calculateSingleDay(recordToSave, appConfig.rates.current, leaveCounts);
             recordToSave.earnings = earnings;
             recordToSave.perWorkerEarning = presentWorkers.length > 0 ? (earnings[presentWorkers[0]] || 0) : appConfig.rates.current.layoffRate;
             
@@ -1002,6 +1054,40 @@
             }
         }
         
+        // NEW helper function to get leaves up to a certain date
+        async function _getLeaveCountsUpToDate(entryDateStr) {
+            const uid = auth.currentUser.uid;
+            const [startMonth, startDay] = appConfig.settings.fiscalYearStart.split('-').map(Number);
+            const entryDateObj = new Date(entryDateStr + 'T00:00:00');
+            
+            let fiscalYearStartYear = getFiscalYearForDate(entryDateObj);
+            const fiscalYearStartDate = `${fiscalYearStartYear}-${String(startMonth).padStart(2, '0')}-${String(startDay).padStart(2, '0')}`;
+            
+            const prevDate = new Date(entryDateObj);
+            prevDate.setDate(prevDate.getDate() - 1);
+            const endDateForLeaveCount = prevDate.toISOString().split('T')[0];
+
+            let leaveCounts = {};
+            workerList.forEach(w => leaveCounts[w] = 0);
+
+            if(fiscalYearStartDate > endDateForLeaveCount) {
+                return leaveCounts;
+            }
+
+            const snapshot = await database.ref(`salaries/${uid}`).orderByChild('date').startAt(fiscalYearStartDate).endAt(endDateForLeaveCount).once('value');
+            
+            if(snapshot.exists()){
+                snapshot.forEach(child => {
+                    const record = child.val();
+                    if (record && (record.type === 'work' || record.type === 'special_overtime')) {
+                        const present = record.presentWorkers || [];
+                        workerList.forEach(w => { if (!present.includes(w)) leaveCounts[w]++; });
+                    }
+                });
+            }
+            return leaveCounts;
+        }
+
         async function fillMissingDays() {
             try {
                 const uid = auth.currentUser.uid;
@@ -1017,15 +1103,20 @@
                 const daysToFill = [];
                 const currentDate = new Date(lastDate);
                 currentDate.setDate(currentDate.getDate() + 1);
+
+                // Do not fill future dates
                 while (currentDate < today) {
                     daysToFill.push(new Date(currentDate));
                     currentDate.setDate(currentDate.getDate() + 1);
                 }
+
                 for (const date of daysToFill) {
                     const dateStr = date.toISOString().split('T')[0];
+                    const leaveCounts = await _getLeaveCountsUpToDate(dateStr);
                     const record = { date: dateStr, type: 'work', tonnage: 1, presentWorkers: [], presentCount: 0, isAutoGenerated: true };
                     if(appConfig.settings.enableWagons) record.wagons = 0;
-                    const earnings = _calculateSingleDay(record, appConfig.rates.current);
+                    
+                    const earnings = _calculateSingleDay(record, appConfig.rates.current, leaveCounts);
                     record.earnings = earnings;
                     record.perWorkerEarning = appConfig.rates.current.layoffRate;
                     await database.ref(`salaries/${uid}/${dateStr}`).set(record);
@@ -1124,7 +1215,8 @@
         function getAgreementStartDate() {
             return appConfig.settings.agreementStartDate || '2023-10-10';
         }
-
+        
+        // UPDATED to handle new leave penalty rule
         async function _calculateBonusForPeriod(startDate, endDate, agreementRates) {
             const snapshot = await database.ref(`salaries/${auth.currentUser.uid}`).orderByChild('date').startAt(startDate).endAt(endDate).once('value');
             let results = {};
@@ -1133,21 +1225,31 @@
             });
 
             if (!snapshot.exists()) return results;
+            
+            // Efficiently get leave counts for the entire period
+            const allRecords = [];
+            snapshot.forEach(child => allRecords.push(child.val()));
 
-            let yearlyEarnings = {}; workerList.forEach(w => yearlyEarnings[w] = 0);
             let leaveCounts = {}; workerList.forEach(w => leaveCounts[w] = 0);
+            let yearlyEarnings = {}; workerList.forEach(w => yearlyEarnings[w] = 0);
+            let totalLeaveCounts = {}; workerList.forEach(w => totalLeaveCounts[w] = 0);
 
-            snapshot.forEach(child => {
-                const record = child.val();
-                if (record) {
-                    const dayEarnings = _calculateSingleDay(record, agreementRates);
-                    workerList.forEach(w => { yearlyEarnings[w] += dayEarnings[w] || 0; });
-                    if (record.type === 'work' || record.type === 'special_overtime') {
-                        const present = record.presentWorkers || [];
-                        workerList.forEach(w => { if (!present.includes(w)) leaveCounts[w]++; });
-                    }
+            for (const record of allRecords) {
+                // Calculate earnings for the day using the current leave count
+                const dayEarnings = _calculateSingleDay(record, agreementRates, leaveCounts);
+                workerList.forEach(w => { yearlyEarnings[w] += dayEarnings[w] || 0; });
+                
+                // AFTER calculation, update leave count for the next iteration
+                if (record.type === 'work' || record.type === 'special_overtime') {
+                    const present = record.presentWorkers || [];
+                    workerList.forEach(w => { 
+                        if (!present.includes(w)) {
+                            leaveCounts[w]++;
+                            totalLeaveCounts[w]++;
+                         }
+                    });
                 }
-            });
+            }
 
             const monthlyAllowance = agreementRates.allowance || 0;
             const totalAllowancePerWorker = monthlyAllowance * 12;
@@ -1157,7 +1259,7 @@
                 const totalYearlyPay = yearlyEarnings[w] + totalAllowancePerWorker;
                 const averageMonthlySalary = totalYearlyPay / 12;
                 const gratuity = averageMonthlySalary;
-                const totalLeavesTaken = leaveCounts[w] || 0;
+                const totalLeavesTaken = totalLeaveCounts[w] || 0;
                 const paidLeavesTaken = Math.max(0, totalLeavesTaken - 20);
                 const paidLeavesRemaining = Math.max(0, 12 - paidLeavesTaken);
                 const leaveBonus = paidLeavesRemaining * layoffRate;
@@ -1186,17 +1288,26 @@
             }
             
             resultElem.innerText = 'Calculating daily earnings, allowance, and benefits...';
+            
+            const allRecords = [];
+            snapshot.forEach(child => allRecords.push(child.val()));
 
             let actualDailyTotals = {}; workerList.forEach(w => actualDailyTotals[w] = 0);
             let hypotheticalDailyTotals = {}; workerList.forEach(w => hypotheticalDailyTotals[w] = 0);
-            snapshot.forEach(child => {
-                const record = child.val();
-                if (!record) return;
+            let leaveCounts = {}; workerList.forEach(w => leaveCounts[w] = 0);
+
+            for (const record of allRecords) {
                 workerList.forEach(w => {
-                    actualDailyTotals[w] += (_calculateSingleDay(record, appConfig.rates.current)[w] || 0);
-                    hypotheticalDailyTotals[w] += (_calculateSingleDay(record, appConfig.rates.new)[w] || 0);
+                    actualDailyTotals[w] += (_calculateSingleDay(record, appConfig.rates.current, leaveCounts)[w] || 0);
+                    hypotheticalDailyTotals[w] += (_calculateSingleDay(record, appConfig.rates.new, leaveCounts)[w] || 0);
                 });
-            });
+                // Update leave counts for next iteration
+                if (record.type === 'work' || record.type === 'special_overtime') {
+                    const present = record.presentWorkers || [];
+                    workerList.forEach(w => { if (!present.includes(w)) leaveCounts[w]++; });
+                }
+            }
+
             const numAllowances = countAllowancesInRange(ARREARS_START_DATE, end);
             const allowanceArrears = numAllowances * ((appConfig.rates.new.allowance / 2) - (appConfig.rates.current.allowance / 2));
             
@@ -1255,17 +1366,24 @@
                  return;
             }
 
+            const allRecords = [];
+            snapshot.forEach(child => allRecords.push(child.val()));
+
             let actualTotals = {}; workerList.forEach(w => actualTotals[w] = 0);
             let hypotheticalTotals = {}; workerList.forEach(w => hypotheticalTotals[w] = 0);
+            let leaveCounts = await _getLeaveCountsUpToDate(start);
 
-            snapshot.forEach(child => {
-                const record = child.val();
-                if (!record) return;
+            for (const record of allRecords) {
                 workerList.forEach(w => {
-                    actualTotals[w] += (_calculateSingleDay(record, appConfig.rates.current)[w] || 0);
-                    hypotheticalTotals[w] += (_calculateSingleDay(record, appConfig.rates.new)[w] || 0);
+                    actualTotals[w] += (_calculateSingleDay(record, appConfig.rates.current, leaveCounts)[w] || 0);
+                    hypotheticalTotals[w] += (_calculateSingleDay(record, appConfig.rates.new, leaveCounts)[w] || 0);
                 });
-            });
+                // Update leave counts for next iteration
+                if (record.type === 'work' || record.type === 'special_overtime') {
+                    const present = record.presentWorkers || [];
+                    workerList.forEach(w => { if (!present.includes(w)) leaveCounts[w]++; });
+                }
+            }
 
             const numAllowances = countAllowancesInRange(start, end);
             const allowanceArrears = numAllowances * ((appConfig.rates.new.allowance / 2) - (appConfig.rates.current.allowance / 2));
