@@ -901,7 +901,7 @@
 
             const absentWorkers = workerList.filter(w => !presentWorkers.includes(w));
             
-            // Calculate penalty amount first
+            // Step 1: Calculate penalty amount
             let totalPenalty = 0;
             if (appConfig.settings.enableLeavePenalty) {
                 absentWorkers.forEach(w => {
@@ -913,7 +913,7 @@
             }
             const penaltyPerWorker = presentCount > 0 ? totalPenalty / presentCount : 0;
 
-            // Handle absent workers' pay
+            // Step 2: Calculate absent workers' pay
             absentWorkers.forEach(w => {
                 if (appConfig.settings.enableLeavePenalty && (leaveCounts[w] || 0) >= 32) {
                     dailyEarnings[w] = 0;
@@ -922,33 +922,36 @@
                 }
             });
 
-            // Handle present workers' pay
+            // Step 3: Calculate present workers' pay
             if (presentCount > 0) {
                 const tonnagePay = (tonnage * tonRate) / presentCount;
                 const wagonPay = appConfig.settings.enableWagons ? ((wagons || 0) * perWagonRate) / presentCount : 0;
 
-                let grossPay;
-
+                let basePayBeforePenalty;
+                
+                // Calculate gross pay based on day type
                 if (type === 'special_overtime') {
-                    const corePay = Math.max(tonnagePay, layoffRate);
-                    grossPay = (corePay * 2) + layoffRate;
+                    const baseForOvertime = Math.max(tonnagePay, layoffRate);
+                    basePayBeforePenalty = (baseForOvertime * 2) + layoffRate + wagonPay;
                 } else { // 'work' day
-                    grossPay = tonnagePay;
+                    basePayBeforePenalty = tonnagePay + wagonPay;
                 }
                 
-                grossPay += wagonPay;
-                
-                let netPay = grossPay - penaltyPerWorker;
-                
+                // Apply penalty
+                const netPay = basePayBeforePenalty - penaltyPerWorker;
+
+                // Apply final minimum guarantee
                 const finalPay = Math.max(netPay, layoffRate);
 
                 presentWorkers.forEach(w => {
                     dailyEarnings[w] = finalPay;
                 });
-            } else { 
-                // All absent, but not a penalty day. They get layoffRate.
+                
+            } else { // All absent case
                 absentWorkers.forEach(w => {
-                    dailyEarnings[w] = layoffRate;
+                    if (!appConfig.settings.enableLeavePenalty || (leaveCounts[w] || 0) < 32) {
+                         dailyEarnings[w] = layoffRate;
+                    }
                 });
             }
 
