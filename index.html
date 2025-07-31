@@ -329,6 +329,7 @@
     });
     
     async function initializeApp() {
+	alert('Aapki User ID hai: ' + auth.currentUser.uid);
         document.body.style.cursor = 'wait';
         setupAppListeners();
         await loadAppSettings();
@@ -1096,7 +1097,6 @@
     
     async function _calculateBonusForPeriod(startDate, endDate, agreementRates) {
         const snapshot = await database.ref(`salaries/${auth.currentUser.uid}`).orderByKey().startAt(startDate).endAt(endDate).once('value');
-		alert('Firebase se yeh data mila: ' + JSON.stringify(snapshot.val()));
         let results = {};
         workerList.forEach(w => { results[w] = { totalBonus: 0, averageMonthlySalary: 0, gratuity: 0, leaveBonus: 0 }; });
         if (!snapshot.exists()) return results;
