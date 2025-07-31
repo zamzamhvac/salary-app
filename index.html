@@ -13,7 +13,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
     <style>
-        /* CSS (Styling) Section - Is mein koi tabdeeli nahi */
+        /* CSS (Styling) Section */
         :root {
             --primary-color: #00796B; /* Teal */
             --accent-color: #00BCD4;  /* Cyan */
@@ -25,12 +25,18 @@
             --divider-color: #BDBDBD;
             --background-color: #f5f5f5;
         }
+
+        /* General Body and Reset Styles */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--background-color); color: var(--text-color); line-height: 1.6; }
+        
+        /* App Layout Containers */
         #auth-container, .page { display: none; }
         #auth-container.active, .page.active { display: block; }
         #app-container { display: none; }
         main { padding: 80px 16px 80px 16px; }
+
+        /* Material Design Inspired Components */
         .card { background-color: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1), 0 2px 10px rgba(0,0,0,0.08); padding: 16px; margin-bottom: 16px; }
         .btn { background-color: var(--primary-color); color: var(--primary-text-color); border: none; padding: 12px 20px; border-radius: 4px; cursor: pointer; font-size: 16px; text-transform: uppercase; box-shadow: 0 2px 2px 0 rgba(0,0,0,0.14), 0 3px 1px -2px rgba(0,0,0,0.12), 0 1px 5px 0 rgba(0,0,0,0.2); transition: background-color 0.3s, box-shadow 0.3s; width: 100%; margin-top: 10px; }
         .btn-accent { background-color: var(--accent-color); }
@@ -41,6 +47,8 @@
         .input-group label { position: absolute; top: 12px; left: 10px; color: var(--secondary-text-color); pointer-events: none; transition: all 0.2s ease; }
         .input-group input:focus + label, .input-group input:not(:placeholder-shown) + label, .input-group select:valid + label { top: -10px; left: 5px; font-size: 12px; color: var(--primary-color); }
         .input-group input:focus, .input-group select:focus { border-bottom: 2px solid var(--primary-color); }
+        
+        /* Layout: App Bar, Navs */
         .app-bar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background-color: var(--primary-color); color: var(--primary-text-color); display: flex; align-items: center; padding: 0 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 1000; }
         .app-bar .menu-btn { background: none; border: none; color: white; cursor: pointer; }
         .app-bar-title { margin-left: 24px; font-size: 20px; font-weight: 500; }
@@ -58,6 +66,8 @@
         .bottom-nav-item .icon { font-size: 24px; }
         .bottom-nav-item .label { font-size: 12px; }
         @media (min-width: 769px) { .bottom-nav { display: none; } }
+        
+        /* Components: Loader, Modal, Snackbar */
         .hidden { display: none !important; }
         #snackbar { visibility: hidden; min-width: 250px; background-color: #333; color: #fff; text-align: center; border-radius: 4px; padding: 16px; position: fixed; z-index: 3000; left: 50%; transform: translateX(-50%); bottom: 30px; transition: visibility 0s, opacity 0.5s linear; }
         #snackbar.show { visibility: visible; opacity: 1; }
@@ -68,6 +78,8 @@
         .modal-content { background-color: #fefefe; padding: 20px; border-radius: 8px; width: 90%; max-width: 400px; }
         .modal-buttons { display: flex; justify-content: flex-end; margin-top: 20px; }
         .modal-buttons button { margin-left: 10px; width: auto; }
+        
+        /* Page-specific styles */
         .data-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         .data-table th, .data-table td { padding: 12px; border-bottom: 1px solid var(--divider-color); text-align: left; }
         .data-table th { background-color: #f0f0f0; }
@@ -78,7 +90,7 @@
 </head>
 <body>
 
-    <!-- Global Loader, Snackbar, and Modal (No changes) -->
+    <!-- Global Loader, Snackbar, and Modal -->
     <div id="loader" class="hidden"><div class="spinner"></div></div>
     <div id="snackbar"></div>
     <div id="confirmation-modal" class="modal hidden">
@@ -88,7 +100,7 @@
         </div>
     </div>
 
-    <!-- Authentication Container (No changes) -->
+    <!-- Authentication Container -->
     <div id="auth-container" class="active">
         <main>
             <div id="login-form" class="card">
@@ -111,11 +123,11 @@
         </main>
     </div>
 
-    <!-- Main Application Container (No changes in structure) -->
+    <!-- Main Application Container -->
     <div id="app-container">
         <header class="app-bar">
             <button class="menu-btn" id="menu-btn"><i class="material-icons">menu</i></button>
-            <h1 id="app-bar-title" class="app-bar-title">Daily Entry</h1>
+            <h1 id="app-bar-title" class="app-bar-title"></h1>
             <div style="flex-grow: 1;"></div>
             <button id="logout-btn" class="btn-link" style="color: white;">Logout</button>
         </header>
@@ -132,27 +144,52 @@
             </ul>
         </nav>
         <main>
-            <div id="daily-entry" class="page active"><!-- Daily Entry HTML --></div>
-            <div id="salaries" class="page"><!-- Salaries HTML --></div>
-            <!-- Bonus Page HTML (unchanged) -->
+            <!-- Daily Entry Page -->
+            <div id="daily-entry" class="page">
+                <div class="card">
+                    <h3>Daily Work Entry</h3>
+                    <div class="input-group"><input type="date" id="daily-entry-date" required placeholder=" "><label for="daily-entry-date">Entry Date</label></div>
+                    <div class="input-group">
+                        <select id="daily-entry-day-type" required><option value="" disabled selected>Select Day Type</option><option value="Work Day">Work Day</option><option value="Rest Day">Rest Day</option><option value="Special Overtime">Special Overtime</option></select>
+                        <label for="daily-entry-day-type">Day Type</label>
+                    </div>
+                    <div id="daily-entry-work-fields">
+                        <div class="input-group"><input type="number" id="daily-entry-tonnage" placeholder=" "><label for="daily-entry-tonnage">Total Tonnage</label></div>
+                        <div class="input-group"><input type="number" id="daily-entry-wagons" placeholder=" "><label for="daily-entry-wagons">Number of Wagons</label></div>
+                    </div>
+                    <div id="daily-entry-attendance"><h4>Worker Attendance</h4><div id="daily-entry-attendance-list" class="attendance-list"></div></div>
+                    <button id="calculate-save-btn" class="btn">Calculate & Save</button>
+                </div>
+            </div>
+
+            <!-- Salaries Page -->
+            <div id="salaries" class="page">
+                <div class="card"><h3>Expected Salary (Current Period)</h3><div id="expected-salary-list"></div></div>
+                <div class="card">
+                    <h3>Historical Salaries</h3>
+                    <div class="input-group"><select id="salary-period-select"></select><label for="salary-period-select">Select Period</label></div>
+                    <table class="data-table"><thead><tr><th>Date</th><th>Tons</th><th>Wagons</th><th>Earning</th></tr></thead><tbody id="salaries-table-body"></tbody></table>
+                    <div id="salary-summary-list" style="margin-top: 20px;"></div>
+                </div>
+            </div>
+            
+            <!-- Bonus Page -->
             <div id="bonus" class="page">
                 <div class="card">
                     <h3>Calculate Annual Bonus</h3>
-                    <div class="input-group">
-                        <select id="bonus-fiscal-year-select"></select>
-                        <label>Select Fiscal Year</label>
-                    </div>
+                    <div class="input-group"><select id="bonus-fiscal-year-select"></select><label>Select Fiscal Year</label></div>
                     <button id="calculate-bonus-btn" class="btn">Calculate Bonus</button>
-                    <div id="bonus-results-container" style="margin-top: 20px;">
-                        <h4>Bonus Calculation Result:</h4>
-                        <pre id="bonus-results-pre"></pre>
-                    </div>
+                    <div id="bonus-results-container" style="margin-top: 20px;"><h4>Bonus Calculation Result:</h4><pre id="bonus-results-pre"></pre></div>
                 </div>
             </div>
-            <div id="arrears" class="page"><!-- Arrears HTML --></div>
-            <div id="leaves" class="page"><!-- Leaves HTML --></div>
-            <div id="settings" class="page"><!-- Settings HTML --></div>
+
+            <!-- Other Pages (Stubs) -->
+            <div id="arrears" class="page"><div class="card"><h3>Arrears</h3><p>This feature is under development.</p></div></div>
+            <div id="leaves" class="page"><div class="card"><h3>Leaves</h3><p>This feature is under development.</p></div></div>
+            <div id="settings" class="page"><div class="card"><h3>Settings</h3><p>This feature is under development.</p></div></div>
         </main>
+        
+        <!-- Bottom Navigation Bar -->
         <div class="bottom-nav" id="bottom-nav">
             <button class="bottom-nav-item active" data-page="daily-entry"><i class="material-icons icon">edit_calendar</i><span class="label">Daily Entry</span></button>
             <button class="bottom-nav-item" data-page="salaries"><i class="material-icons icon">payments</i><span class="label">Salaries</span></button>
@@ -162,31 +199,27 @@
 
     <script>
     // =================================================================================
-    // JAVASCRIPT SECTION (THEEK SHUDA)
+    // JAVASCRIPT SECTION
     // =================================================================================
     document.addEventListener('DOMContentLoaded', () => {
 
         // --- Firebase Configuration ---
-        // IMPORTANT: Apni Firebase project ki keys yahan daalein.
-        // Yeh tariqa local testing ke liye hai.
+        // =======================================================================
+        // ==  AHEM! AAP APNI FIREBASE CONSOLE SE KEYS COPY KARKE YAHAN PASTE KAREIN  ==
+        // =======================================================================
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY", // <-- YAHAN KEY DAALEIN
-            authDomain: "YOUR_AUTH_DOMAIN", // <-- YAHAN DOMAIN DAALEIN
-            databaseURL: "YOUR_DATABASE_URL", // <-- YAHAN URL DAALEIN
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_STORAGE_BUCKET",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
+            apiKey: "PASTE_YOUR_API_KEY_HERE",
+            authDomain: "PASTE_YOUR_AUTH_DOMAIN_HERE",
+            databaseURL: "PASTE_YOUR_DATABASE_URL_HERE",
+            projectId: "PASTE_YOUR_PROJECT_ID_HERE",
+            storageBucket: "PASTE_YOUR_STORAGE_BUCKET_HERE",
+            messagingSenderId: "PASTE_YOUR_MESSAGING_SENDER_ID_HERE",
+            appId: "PASTE_YOUR_APP_ID_HERE"
         };
         
         // --- Global State ---
-        let firebaseApp = null;
-        let auth = null;
-        let database = null;
-        let currentUser = null;
-        let userConfig = {};
-        let userWorkers = [];
-        let userAgreements = {};
+        let firebaseApp, auth, database, currentUser = null;
+        let userConfig = {}, userWorkers = [], userAgreements = {};
         let currentModalCallback = null;
 
         // --- UI Element References ---
@@ -201,7 +234,7 @@
         const navOverlay = document.getElementById('nav-overlay');
         const userEmailNav = document.getElementById('user-email-nav');
 
-        // --- Utility & Component Functions (No changes) ---
+        // --- Utility & Component Functions ---
         const showLoader = () => loader.classList.remove('hidden');
         const hideLoader = () => loader.classList.add('hidden');
         const showSnackbar = (message) => {
@@ -225,11 +258,11 @@
         });
         document.getElementById('modal-cancel-btn').addEventListener('click', hideConfirmationModal);
 
-        // --- Firebase Initialization (THEEK SHUDA) ---
+        // --- Firebase Initialization ---
         function initializeFirebase() {
-            // Check karein ke user ne keys daali hain ya nahi
-            if (firebaseConfig.apiKey === "YOUR_API_KEY") {
-                alert("ERROR: Please set your Firebase config in the script tag!");
+            if (firebaseConfig.apiKey.startsWith("PASTE_YOUR")) {
+                document.getElementById('login-error').textContent = "Firebase is not configured. Please add your API keys in the script.";
+                alert("ATTENTION: Firebase keys are not set! Please add your keys in the script section of the HTML file.");
                 return;
             }
             try {
@@ -270,12 +303,10 @@
                     database.ref(`agreements/${uid}`).once('value')
                 ]);
                 userConfig = configSnap.val() || {};
-                userWorkers = workersSnap.val() || [];
-                userAgreements = agreementsSnap.val() || { current: {}, new: {} };
+                userWorkers = workersSnap.val() || ["Worker1", "Worker2"]; // Default workers
+                userAgreements = agreementsSnap.val() || { current: {}, new: {} }; // Default agreements
                 
-                // Pehle page par navigate karein aur forms populate karein
-                navigateTo('daily-entry'); 
-                
+                navigateTo('daily-entry');
             } catch (error) {
                 console.error("Error loading initial data:", error);
                 showSnackbar("Failed to load user data.");
@@ -284,36 +315,35 @@
             }
         }
         
-        // Auth Event Listeners (No changes)
+        // --- Auth Event Listeners ---
         document.getElementById('login-btn').addEventListener('click', () => {
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
             const errorP = document.getElementById('login-error');
             errorP.textContent = '';
+            if (!auth) {
+                 errorP.textContent = "Firebase is not initialized. Check API keys.";
+                 return;
+            }
             showLoader();
             auth.signInWithEmailAndPassword(email, password)
                 .catch(error => { errorP.textContent = error.message; })
                 .finally(hideLoader);
         });
-        document.getElementById('signup-btn').addEventListener('click', () => { /* Signup logic */ });
+        document.getElementById('signup-btn').addEventListener('click', () => {
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            // Add signup logic
+        });
         document.getElementById('logout-btn').addEventListener('click', () => auth.signOut());
-        document.getElementById('forgot-password-btn').addEventListener('click', () => { /* Forgot password logic */ });
-        document.getElementById('show-signup-btn').addEventListener('click', () => { /* show signup logic */ });
-        document.getElementById('show-login-btn').addEventListener('click', () => { /* show login logic */ });
 
         // --- Navigation ---
         function navigateTo(pageId) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            const targetPage = document.getElementById(pageId);
-            if(targetPage) {
-                targetPage.classList.add('active');
-            } else {
-                console.error(`Page with ID "${pageId}" not found!`);
-                return;
-            }
+            document.getElementById(pageId).classList.add('active');
 
-            const linkText = document.querySelector(`.nav-link[href="#${pageId}"]`).textContent;
-            appBarTitle.textContent = linkText;
+            const linkEl = document.querySelector(`.nav-link[href="#${pageId}"]`);
+            appBarTitle.textContent = linkEl ? linkEl.textContent : 'Salary Pro';
 
             document.querySelectorAll('.nav-link, .bottom-nav-item').forEach(link => {
                 link.classList.remove('active');
@@ -324,42 +354,33 @@
             
             sideNav.classList.remove('open');
             navOverlay.classList.remove('open');
-            
-            // Har page ke liye us ka content render karein
-            renderPageContent(pageId);
-        }
 
-        function renderPageContent(pageId) {
-            const container = document.getElementById(pageId);
-            if (!container) return;
-            // Page-specific content rendering logic yahan daalein
-            // Jaise purane script mein tha
+            // Page-specific setup calls
             if (pageId === 'bonus' || pageId === 'leaves') {
                 populateFiscalYearDropdowns();
             }
-            // Isko mazeed pages ke liye expand karein
+             if (pageId === 'daily-entry') {
+                populateWorkersList();
+            }
         }
-        
-        // Navigation Event Listeners (No changes)
-        document.getElementById('menu-btn').addEventListener('click', () => { /* toggle menu */ });
-        navOverlay.addEventListener('click', () => { /* close menu */ });
-        document.querySelectorAll('.nav-link').forEach(link => { /* nav logic */ });
-        document.querySelectorAll('.bottom-nav-item').forEach(item => { /* bottom nav logic */ });
+        document.getElementById('menu-btn').addEventListener('click', () => { sideNav.classList.add('open'); navOverlay.classList.add('open'); });
+        navOverlay.addEventListener('click', () => { sideNav.classList.remove('open'); navOverlay.classList.remove('open'); });
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', (e) => { e.preventDefault(); navigateTo(e.currentTarget.getAttribute('href').substring(1)); });
+        });
+        document.querySelectorAll('.bottom-nav-item').forEach(item => {
+            item.addEventListener('click', (e) => navigateTo(e.currentTarget.dataset.page));
+        });
 
         // --- Core Calculation Logic ---
         function _calculateSingleDay(record, agreementType = 'current') {
             const agreementRates = userAgreements[agreementType] || {};
-            const { tonRate, restRate, layoffRate, perWagonRate } = agreementRates;
-            const { dayType, tonnage, wagons, attendance } = record;
-            const present = attendance || [];
-            const presentCount = present.length;
+            const { tonRate = 0, restRate = 0, layoffRate = 0, perWagonRate = 0 } = agreementRates;
+            const { dayType, tonnage = 0, wagons = 0, attendance = [] } = record;
+            const presentCount = attendance.length;
             
             let dailyEarnings = {};
             userWorkers.forEach(w => dailyEarnings[w] = 0);
-
-            if (!tonRate || !restRate || !layoffRate) {
-                return dailyEarnings; // Return empty if rates are not set
-            }
 
             if (dayType === 'Rest Day') {
                 userWorkers.forEach(w => { dailyEarnings[w] = restRate; });
@@ -367,13 +388,13 @@
             }
 
             if (presentCount === 0) {
-                workerList.forEach(w => dailyEarnings[w] = layoffRate);
+                userWorkers.forEach(w => dailyEarnings[w] = layoffRate);
                 return dailyEarnings;
             }
 
-            let tonnagePay = (tonnage * tonRate) / presentCount;
-            let wagonPay = ((wagons || 0) * perWagonRate) / presentCount;
-            let basePay = Math.max(tonnagePay, layoffRate);
+            const tonnagePay = (tonnage * tonRate) / presentCount;
+            const wagonPay = (wagons * perWagonRate) / presentCount;
+            const basePay = Math.max(tonnagePay, layoffRate);
             
             let perWorkerPay;
             if (dayType === 'Special Overtime') {
@@ -383,7 +404,7 @@
             }
 
             userWorkers.forEach(w => {
-                dailyEarnings[w] = present.includes(w) ? perWorkerPay : layoffRate;
+                dailyEarnings[w] = attendance.includes(w) ? perWorkerPay : layoffRate;
             });
             
             for(const worker in dailyEarnings){
@@ -392,9 +413,29 @@
             return dailyEarnings;
         }
 
-        // --- Page: Bonus (UPDATED with correct logic) ---
-        
-        // Yeh function purane script se aazmooda logic istemal karta hai
+        // --- Page: Daily Entry ---
+        function populateWorkersList() {
+            const listDiv = document.getElementById('daily-entry-attendance-list');
+            listDiv.innerHTML = '';
+            if (userWorkers.length === 0) {
+                listDiv.innerHTML = '<p>No workers configured.</p>';
+                return;
+            }
+            userWorkers.forEach(worker => {
+                listDiv.innerHTML += `<label><input type="checkbox" class="attendance-checkbox" value="${worker}" checked> ${worker}</label>`;
+            });
+        }
+        document.getElementById('daily-entry-day-type').addEventListener('change', (e) => {
+            const workFields = document.getElementById('daily-entry-work-fields');
+            const show = (e.target.value === 'Work Day' || e.target.value === 'Special Overtime');
+            workFields.style.display = show ? 'block' : 'none';
+        });
+        document.getElementById('calculate-save-btn').addEventListener('click', () => {
+            showConfirmationModal('Save Entry', 'Are you sure you want to save this daily entry?', saveDailyEntry);
+        });
+        function saveDailyEntry() { /* Logic for saving daily entry */ }
+
+        // --- Page: Bonus ---
         async function _calculateBonusForPeriod(startDate, endDate) {
             const snapshot = await database.ref(`salaries/${currentUser.uid}`).orderByKey().startAt(startDate).endAt(endDate).once('value');
             
@@ -428,7 +469,7 @@
             const layoffRate = agreementRates.layoffRate || 0;
 
             if (layoffRate === 0) {
-                showSnackbar("Layoff Rate is not set in Current Agreement. Cannot calculate leave bonus.");
+                showSnackbar("Warning: Layoff Rate is not set in Current Agreement. Cannot calculate leave bonus.");
             }
 
             userWorkers.forEach(w => {
@@ -492,7 +533,7 @@
             const selects = document.querySelectorAll('#bonus-fiscal-year-select, #leaves-fiscal-year-select');
             selects.forEach(select => {
                 if(!select) return;
-                select.innerHTML = '';
+                select.innerHTML = '<option value="" disabled selected>Select a fiscal year</option>';
                 let currentYear = new Date().getFullYear();
                 if (new Date().getMonth() < 9 || (new Date().getMonth() === 9 && new Date().getDate() < 10)) {
                     currentYear--;
@@ -504,11 +545,7 @@
             });
         }
         
-        // --- Dummy Functions for remaining features ---
-        // In features ko aap ab aahista aahista implement kar sakte hain.
-        // renderPageContent function mein inke liye content add karna hoga.
-
-        // Initialize the application
+        // --- Initialize the Application ---
         initializeFirebase();
     });
     </script>
