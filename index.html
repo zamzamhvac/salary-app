@@ -957,7 +957,7 @@
         let leaveCounts = {};
         workerList.forEach(w => leaveCounts[w] = 0);
         if(fiscalYearStartDate > endDateForLeaveCount) { return leaveCounts; }
-        const snapshot = await database.ref(`salaries/${uid}`).orderByChild('date').startAt(fiscalYearStartDate).endAt(endDateForLeaveCount).once('value');
+        const snapshot = await database.ref(`salaries/${uid}`).orderByKey().startAt(fiscalYearStartDate).endAt(endDateForLeaveCount).once('value');
         if(snapshot.exists()){
             snapshot.forEach(child => {
                 const record = child.val();
@@ -1036,7 +1036,7 @@
         if (!startDateStr || !endDateStr) { showSnackbar("Please select both a start and end date.", 'error'); return; }
         const resultElem = document.getElementById('payrollResult');
         resultElem.innerText = 'Generating payroll...';
-        database.ref(`salaries/${auth.currentUser.uid}`).orderByChild('date').startAt(startDateStr).endAt(endDateStr).once('value', snapshot => {
+        database.ref(`salaries/${auth.currentUser.uid}`).orderByKey().startAt(startDateStr).endAt(endDateStr).once('value', snapshot => {
             let payroll = {}; workerList.forEach(w => { payroll[w] = 0; });
             if (snapshot.exists()) {
                 snapshot.forEach(child => {
@@ -1291,7 +1291,7 @@
             periodTitle = `Mojooda Expected Salary (16 se Aakhir Tak)`;
         }
         try {
-            const snapshot = await database.ref(`salaries/${auth.currentUser.uid}`).orderByChild('date').startAt(startDate).endAt(endDate).once('value');
+            const snapshot = await database.ref(`salaries/${auth.currentUser.uid}`).orderByKey().startAt(startDate).endAt(endDate).once('value');
             let periodSalaries = {}; workerList.forEach(w => periodSalaries[w] = 0);
             if (snapshot.exists()) {
                 snapshot.forEach(child => {
@@ -1461,7 +1461,7 @@
         endDateObj.setFullYear(endDateObj.getFullYear() + 1);
         endDateObj.setDate(endDateObj.getDate() - 1);
         const endDate = endDateObj.toISOString().split('T')[0];
-        const snapshot = await database.ref(`salaries/${auth.currentUser.uid}`).orderByChild('date').startAt(startDate).endAt(endDate).once('value');
+        const snapshot = await database.ref(`salaries/${auth.currentUser.uid}`).orderByKey().startAt(startDate).endAt(endDate).once('value');
         if (!snapshot.exists()) { resultElem.innerHTML = `<p>No records for fiscal year ${startYear}-${startYear + 1}.</p>`; return; }
         let leaveCounts = {}; workerList.forEach(w => { leaveCounts[w] = 0; });
         snapshot.forEach(child => {
