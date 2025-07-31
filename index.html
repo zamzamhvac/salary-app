@@ -253,7 +253,6 @@
                 appId: "1:572149024584:web:bbd70fc34d2ef11679d57d"
             };
             firebase.initializeApp(firebaseConfig);
-			alert('Yeh App is Project ID se connect hai: ' + firebaseConfig.projectId);
             auth = firebase.auth();
             database = firebase.database();
             
@@ -997,7 +996,7 @@
                 const earnings = _calculateSingleDay(record, appConfig.rates.current, leaveCounts);
                 record.earnings = earnings;
                 record.perWorkerEarning = appConfig.rates.current.layoffRate;
-                await database.ref(`salaries/${uid}/${dateStr}`).set(record);
+				await database.ref(`salaries/${uid}`).child(dateStr).set(record);
             }
             if (daysToFill.length > 0) {
                 showSnackbar(`${daysToFill.length} missing days filled automatically.`, 'success');
