@@ -329,7 +329,6 @@
     });
     
     async function initializeApp() {
-	alert('Aapki User ID hai: ' + auth.currentUser.uid);
         document.body.style.cursor = 'wait';
         setupAppListeners();
         await loadAppSettings();
@@ -894,7 +893,7 @@
         else if (presentWorkers.length > 0) { perWorkerEarning = earnings[presentWorkers[0]] || 0; } 
         else { perWorkerEarning = appConfig.rates.current.layoffRate; }
         recordToSave.perWorkerEarning = perWorkerEarning;
-        await database.ref(`salaries/${auth.currentUser.uid}/${date}`).set(recordToSave);
+		await database.ref(`salaries/${auth.currentUser.uid}`).child(date).set(recordToSave);
         updateCycleState(dayType);
         showSnackbar('Daily entry saved successfully!', 'success');
         loadHistory();
