@@ -1059,21 +1059,25 @@
 // ========= PURANE _calculateBonusForPeriod KO IS NAYE CODE SE BADLEIN =========
 // ========================================================================
 
+// ========================================================================
+// ========= PURANE _calculateBonusForPeriod KO IS NAYE CODE SE BADLEIN =========
+// ========================================================================
+
 async function _calculateBonusForPeriod(startDate, endDate, agreementRates) {
-    // FIX #1: Timezone ke maslon se bachne ke liye query ko theek karna
+    // FIX: .orderByChild('date') ko .orderByKey() se tabdeel kiya gaya hai
+    // Yeh is masle ki asal jarh thi aur is se data fetching 100% theek ho jayegi.
     const snapshot = await database.ref(`salaries/${auth.currentUser.uid}`)
-                                 .orderByChild('date')
+                                 .orderByKey() // <- ASAL FIX YAHAN HAI
                                  .startAt(startDate)
-                                 .endAt(endDate + 'T23:59:59') // Yeh line data fetch karne ka masla hal karegi
+                                 .endAt(endDate)
                                  .once('value');
     let results = {};
     workerList.forEach(w => { results[w] = { totalBonus: 0, averageMonthlySalary: 0, gratuity: 0, leaveBonus: 0 }; });
 
     if (!snapshot.exists()) {
-        // Agar koi data nahi mila to leave bonus calculate karke wapas bhej dein
         const layoffRate = agreementRates.layoffRate || 0;
         workerList.forEach(w => {
-            const leaveBonus = 12 * layoffRate; // 12 bachi hui paid leaves
+            const leaveBonus = 12 * layoffRate;
             results[w] = { totalBonus: leaveBonus, averageMonthlySalary: 0, gratuity: 0, leaveBonus: leaveBonus };
         });
         return results;
@@ -1081,10 +1085,14 @@ async function _calculateBonusForPeriod(startDate, endDate, agreementRates) {
     
     const allRecords = [];
     snapshot.forEach(child => allRecords.push(child.val()));
-    
-    // YEH LINE DEBUGGING KE LIYE HAI: Yeh aapko batayegi ke kitne records milay hain
+
+    // Yeh console log ab aapko sahi count dikhayega
     console.log('Bonus calculation ke liye ' + allRecords.length + ' din ka record mila.');
 
+    if (allRecords.length === 0) {
+        return results;
+    }
+    
     let yearlyEarnings = {}; workerList.forEach(w => yearlyEarnings[w] = 0);
     let totalLeaveCounts = {}; workerList.forEach(w => totalLeaveCounts[w] = 0);
 
@@ -1105,14 +1113,15 @@ async function _calculateBonusForPeriod(startDate, endDate, agreementRates) {
             });
         }
     }
-
-    // FIX #2: Bonus ki calculation ko aqli (logical) banana
-    const earnedAllowancePeriods = countAllowancesInRange(startDate, endDate);
+    
+    const actualStartDate = allRecords[0].date;
+    const actualEndDate = allRecords[allRecords.length - 1].date;
+    const earnedAllowancePeriods = countAllowancesInRange(actualStartDate, actualEndDate);
     const allowancePerPeriod = (agreementRates.allowance || 0) / 2;
     const totalEarnedAllowance = earnedAllowancePeriods * allowancePerPeriod;
-    
-    const start = new Date(startDate);
-    const end_ = new Date(endDate);
+
+    const start = new Date(actualStartDate);
+    const end_ = new Date(actualEndDate);
     let monthsPassed = (end_.getFullYear() - start.getFullYear()) * 12;
     monthsPassed -= start.getMonth();
     monthsPassed += end_.getMonth();
