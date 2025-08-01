@@ -837,47 +837,59 @@
             return `${startYear}-10-10`;
         }
 
-        async function _calculateBonusForPeriod(startDate, endDate, agreementRates) {
-            const snapshot = await database.ref(`salaries/${auth.currentUser.uid}`).orderByChild('date').startAt(startDate).endAt(endDate).once('value');
-            let results = {};
-            workerList.forEach(w => {
-                results[w] = { totalBonus: 0, averageMonthlySalary: 0, gratuity: 0, leaveBonus: 0 };
-            });
+        // ====================================================================================
+// ===== YEH CODE AAPKI "WORKING FILE" SE LIYA GAYA HAI. ISAY PASTE KAR DEIN =====
+// ====================================================================================
 
-            if (!snapshot.exists()) return results;
+async function _calculateBonusForPeriod(startDate, endDate, agreementRates) {
+    // Step 1: Query bilkul "working file" jaisi
+    const snapshot = await database.ref(`salaries/${auth.currentUser.uid}`).orderByChild('date').startAt(startDate).endAt(endDate).once('value');
+    
+    let results = {};
+    workerList.forEach(w => {
+        results[w] = { totalBonus: 0, averageMonthlySalary: 0, gratuity: 0, leaveBonus: 0 };
+    });
 
-            let yearlyEarnings = {}; workerList.forEach(w => yearlyEarnings[w] = 0);
-            let leaveCounts = {}; workerList.forEach(w => leaveCounts[w] = 0);
+    if (!snapshot.exists()) return results;
 
-            snapshot.forEach(child => {
-                const record = child.val();
-                if (record) {
-                    const dayEarnings = _calculateSingleDay(record, agreementRates);
-                    workerList.forEach(w => { yearlyEarnings[w] += dayEarnings[w] || 0; });
-                    if (record.type === 'work' || record.type === 'special_overtime') {
-                        const present = record.presentWorkers || [];
-                        workerList.forEach(w => { if (!present.includes(w)) leaveCounts[w]++; });
-                    }
-                }
-            });
+    let yearlyEarnings = {}; workerList.forEach(w => yearlyEarnings[w] = 0);
+    let leaveCounts = {}; workerList.forEach(w => leaveCounts[w] = 0);
 
-            const monthlyAllowance = agreementRates.allowance || 0;
-            const totalAllowancePerWorker = monthlyAllowance * 12;
-            const layoffRate = agreementRates.layoffRate || 0;
-
-            workerList.forEach(w => {
-                const totalYearlyPay = yearlyEarnings[w] + totalAllowancePerWorker;
-                const averageMonthlySalary = totalYearlyPay / 12;
-                const gratuity = averageMonthlySalary;
-                const totalLeavesTaken = leaveCounts[w] || 0;
-                const paidLeavesTaken = Math.max(0, totalLeavesTaken - 20);
-                const paidLeavesRemaining = Math.max(0, 12 - paidLeavesTaken);
-                const leaveBonus = paidLeavesRemaining * layoffRate;
-                const totalBonus = averageMonthlySalary + gratuity + leaveBonus;
-                results[w] = { totalBonus, averageMonthlySalary, gratuity, leaveBonus };
-            });
-            return results;
+    snapshot.forEach(child => {
+        const record = child.val();
+        if (record) {
+            // Step 2: Calculation ka tareeqa bilkul "working file" jaisa
+            const dayEarnings = _calculateSingleDay(record, agreementRates); // Yahan doosra parameter nahi hai
+            workerList.forEach(w => { yearlyEarnings[w] += dayEarnings[w] || 0; });
+            
+            // Leaves ki counting bhi "working file" jaisi
+            if (record.type === 'work' || record.type === 'special_overtime') {
+                const present = record.presentWorkers || [];
+                workerList.forEach(w => { if (!present.includes(w)) leaveCounts[w]++; });
+            }
         }
+    });
+
+    const monthlyAllowance = agreementRates.allowance || 0;
+    const totalAllowancePerWorker = monthlyAllowance * 12; // Hamesha 12 mahine ka allowance
+    const layoffRate = agreementRates.layoffRate || 0;
+
+    workerList.forEach(w => {
+        const totalYearlyPay = yearlyEarnings[w] + totalAllowancePerWorker;
+        const averageMonthlySalary = totalYearlyPay / 12; // Hamesha 12 se divide
+        
+        const gratuity = averageMonthlySalary;
+        const totalLeavesTaken = leaveCounts[w] || 0;
+        const paidLeavesTaken = Math.max(0, totalLeavesTaken - 20);
+        const paidLeavesRemaining = Math.max(0, 12 - paidLeavesTaken);
+        const leaveBonus = paidLeavesRemaining * layoffRate;
+        const totalBonus = averageMonthlySalary + gratuity + leaveBonus;
+        
+        results[w] = { totalBonus, averageMonthlySalary, gratuity, leaveBonus };
+    });
+    
+    return results;
+}
         
         async function calculateAutomaticArrears() {
             const resultElem = document.getElementById('automaticArrearsResult');
