@@ -93,6 +93,7 @@
     @media (min-width: 960px) { .grid-layout { grid-template-columns: 1fr 1fr; } }
     .stagger-in > * { opacity: 0; transform: translateY(15px); transition: opacity 0.4s ease-out, transform 0.4s ease-out; }
     
+    /* New styles for cycle indicator */
     .cycle-indicator { 
         background-color: #e3f2fd; 
         padding: 8px 12px; 
@@ -116,6 +117,7 @@
     }
     .cycle-work { background-color: #e3f2fd; }
     .cycle-rest { background-color: #e8f5e9; }
+    /* Forgot Password Button Style */
     #forgot-password-btn {
         width: 100%;
         margin-top: 8px;
@@ -196,7 +198,6 @@
                 <div id="arrears-page" class="page"></div>
                 <div id="leaves-page" class="page"></div>
                 <div id="settings-page" class="page"></div>
-                <div id="general-settings-page" class="page"></div>
                 <div id="generate-payroll-page" class="page"></div>
                 <div id="manage-workers-page" class="page"></div>
             </div>
@@ -229,7 +230,7 @@
         const auth = firebase.auth();
         const database = firebase.database();
         let workerList = [];
-        let appConfig = { rates: null, settings: null };
+        let appConfig = { rates: null };
         
         // Cycle constants
         const WORK_CYCLE = 6;
@@ -303,7 +304,9 @@
             if (user) {
                 loginContainer.classList.add('hidden');
                 appContainer.classList.remove('hidden');
+                document.body.style.cursor = 'wait';
                 await initializeApp();
+                document.body.style.cursor = 'default';
             } else {
                 loginContainer.classList.remove('hidden');
                 appContainer.classList.add('hidden');
@@ -311,76 +314,11 @@
         });
 
         async function initializeApp() {
-            document.body.style.cursor = 'wait';
             setupAppListeners();
-            await loadAppSettings();
             await loadWorkers();
             await loadAgreements();
             await determineCurrentCycle();
             showPage('daily-entry-page');
-            document.body.style.cursor = 'default';
-        }
-        
-        async function loadAppSettings() {
-            const uid = auth.currentUser.uid;
-            const defaultSettings = {
-                workerCount: 8,
-                fiscalYearStart: '10-10', // Format: MM-DD
-                agreementStartDate: '2023-10-10', // Format: YYYY-MM-DD
-                enableWagons: true
-            };
-
-            try {
-                const snapshot = await database.ref(`configs/${uid}`).once('value');
-                if (snapshot.exists()) {
-                    appConfig.settings = { ...defaultSettings, ...snapshot.val() };
-                } else {
-                    await database.ref(`configs/${uid}`).set(defaultSettings);
-                    appConfig.settings = defaultSettings;
-                }
-            } catch (error) {
-                console.error("Settings load karne mein masla:", error.message);
-                showSnackbar('Settings load nahi ho sakeen.', 'error');
-                appConfig.settings = defaultSettings;
-            }
-        }
-        
-        function saveAppSettings() {
-            const uid = auth.currentUser.uid;
-            const workerCount = parseInt(document.getElementById('settingWorkerCount').value);
-            const agreementStartDate = document.getElementById('settingAgreementStart').value;
-
-            if(!workerCount || workerCount <= 0){
-                showSnackbar("Number of workers must be greater than 0.", 'error');
-                return;
-            }
-            if (!agreementStartDate) {
-                showSnackbar("Agreement start date zaroori hai.", 'error');
-                return;
-            }
-
-            const settingsToSave = {
-                workerCount: workerCount,
-                agreementStartDate: agreementStartDate,
-                fiscalYearStart: `${document.getElementById('settingFiscalMonth').value}-${document.getElementById('settingFiscalDay').value}`,
-                enableWagons: document.getElementById('settingEnableWagons').checked
-            };
-
-            showConfirmationModal('Are you sure you want to save these settings? This might require updating worker names.', async () => {
-                try {
-                    await database.ref(`configs/${uid}`).set(settingsToSave);
-                    const oldWorkerCount = appConfig.settings.workerCount;
-                    appConfig.settings = settingsToSave; // Update local config
-                    showSnackbar('Settings saved successfully!', 'success');
-                    
-                    // If worker count has changed, take user to manage workers page
-                    if (oldWorkerCount !== settingsToSave.workerCount) {
-                        showPage('manage-workers-page', 'Manage Workers');
-                    }
-                } catch (error) {
-                    showSnackbar(`Error saving settings: ${error.message}`, 'error');
-                }
-            });
         }
 
         function setupAppListeners() {
@@ -398,7 +336,6 @@
 
         async function loadWorkers() {
             const uid = auth.currentUser.uid;
-            // Default names are only for initial setup, the count comes from settings
             const defaultWorkers = ["Khushi", "Anwar", "Mumtaz", "Ameer", "Nawaz", "Hussain", "Latif", "Rabdina"];
             try {
                 const snapshot = await database.ref(`workers/${uid}`).once('value');
@@ -406,18 +343,12 @@
                     workerList = snapshot.val();
                     if(!Array.isArray(workerList)) throw new Error("Worker data is not an array");
                 } else {
-                    // Set default workers based on the count in settings
-                    const count = appConfig.settings.workerCount || 8;
-                    const initialWorkers = defaultWorkers.slice(0, count);
-                    for(let i=initialWorkers.length; i<count; i++){
-                        initialWorkers.push(`Worker ${i+1}`);
-                    }
-                    await database.ref(`workers/${uid}`).set(initialWorkers);
-                    workerList = initialWorkers;
+                    await database.ref(`workers/${uid}`).set(defaultWorkers);
+                    workerList = defaultWorkers;
                 }
             } catch (error) {
                 console.error("Error loading workers:", error.message);
-                workerList = defaultWorkers.slice(0, appConfig.settings.workerCount || 8);
+                workerList = defaultWorkers;
             }
         }
         
@@ -475,6 +406,7 @@
             }
         }
         
+        // UPDATED to include new fields
         async function loadAgreements() {
             const uid = auth.currentUser.uid;
             const getDefaultAgreements = () => JSON.parse(JSON.stringify({
@@ -502,6 +434,7 @@
             }
         }
         
+        // UPDATED to save new fields
         function saveAgreement(type) {
             showConfirmationModal(`Are you sure you want to save the '${type}' agreement?`, async () => {
                 const uid = auth.currentUser.uid;
@@ -510,13 +443,9 @@
                     restRate: parseFloat(document.getElementById(`${type}RestRate`).value),
                     layoffRate: parseFloat(document.getElementById(`${type}LayoffRate`).value),
                     allowance: parseFloat(document.getElementById(`${type}Allowance`).value),
+                    perWagonRate: parseFloat(document.getElementById(`${type}PerWagonRate`).value),
                     annualBenefits: parseFloat(document.getElementById(`${type}AnnualBenefits`).value)
                 };
-
-                if(appConfig.settings.enableWagons){
-                    data.perWagonRate = parseFloat(document.getElementById(`${type}PerWagonRate`).value);
-                }
-
                 await database.ref(`agreements/${uid}/${type}`).update(data);
                 showSnackbar(`${type.charAt(0).toUpperCase() + type.slice(1)} Agreement saved!`, 'success');
                 await loadAgreements();
@@ -526,11 +455,9 @@
         function showPage(pageId, customTitle) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             const targetPage = document.getElementById(pageId);
-            const mainPageId = ['generate-payroll-page', 'manage-workers-page', 'general-settings-page'].includes(pageId) ? 'settings-page' : pageId;
-            
+            const mainPageId = pageId.startsWith('generate-payroll') || pageId.startsWith('manage-workers') ? 'settings-page' : pageId;
             const pageLink = document.querySelector(`.nav-link[data-page="${mainPageId}"]`);
             document.getElementById('header-title').textContent = customTitle || (pageLink ? pageLink.querySelector('span').textContent : 'Salary Pro');
-            
             document.querySelectorAll('.nav-link, .bottom-nav-item').forEach(link => {
                 link.classList.toggle('active', link.dataset.page === mainPageId);
             });
@@ -541,11 +468,12 @@
         
         function renderPageContent(pageId) {
             const container = document.getElementById(pageId);
-            if (!appConfig.rates || !workerList || !appConfig.settings) { 
+            if (!appConfig.rates || !workerList || workerList.length === 0) { 
                 container.innerHTML = LOADER_HTML; return; 
             }
             let content = '';
             switch(pageId) {
+                // UPDATED Daily Entry page with wagon field
                 case 'daily-entry-page':
                     content = `<div class="grid-layout">
                         <div class="card">
@@ -558,9 +486,9 @@
                             <div class="select-group"><select id="dayType" class="form-select"><option value="work">Work Day</option><option value="rest">Rest Day</option><option value="special_overtime">Special Overtime</option></select></div>
                             <div id="tonnage-section">
                                 <div class="form-group"><input type="number" id="tonnage" class="form-input" placeholder=" " required><label for="tonnage" class="form-label">Total Tonnage</label></div>
-                                ${appConfig.settings.enableWagons ? `<div class="form-group"><input type="number" id="wagons" class="form-input" placeholder=" " required value="0"><label for="wagons" class="form-label">Number of Wagons</label></div>` : ''}
+                                <div class="form-group"><input type="number" id="wagons" class="form-input" placeholder=" " required value="0"><label for="wagons" class="form-label">Number of Wagons</label></div>
                             </div>
-                            <h3 style="font-size: 16px; font-weight: 500; margin-top:24px;">Worker Attendance (${workerList.length} Total)</h3>
+                            <h3 style="font-size: 16px; font-weight: 500; margin-top:24px;">Worker Attendance</h3>
                             <ul class="stagger-in" style="list-style:none; padding:0; max-height:200px; overflow-y:auto;">${workerList.map(w => `<li><label style="display:flex; align-items:center; width:100%; padding: 4px 0;"><input type="checkbox" class="worker-checkbox" checked value="${w}"> <span style="margin-left:8px;">${w}</span></label></li>`).join('')}</ul>
                             <button class="btn accent" onclick="confirmAndSaveDailyEntry()" style="width:100%; margin-top: 16px;">Calculate & Save</button>
                         </div>
@@ -606,14 +534,14 @@
                     initializeSalariesView();
                     renderCurrentExpectedSalary();
                     break;
+                // UPDATED Agreement page with wagon and benefits fields
                 case 'agreements-page':
-                    const wagonInputHTML = (type) => appConfig.settings.enableWagons ? `<div class="form-group"><input type="number" id="${type}PerWagonRate" value="${appConfig.rates[type].perWagonRate || 100}" class="form-input" placeholder=" "><label class="form-label">Per Wagon Rate</label></div>` : '';
                     content = `<div class="grid-layout">
                         <div class="card"><h2 class="card-title">Current Agreement</h2>
                             <div class="form-group"><input type="number" id="currentTonRate" value="${appConfig.rates.current.tonRate}" class="form-input" placeholder=" "><label class="form-label">Ton Rate</label></div>
                             <div class="form-group"><input type="number" id="currentRestRate" value="${appConfig.rates.current.restRate}" class="form-input" placeholder=" "><label class="form-label">Rest Rate</label></div>
                             <div class="form-group"><input type="number" id="currentLayoffRate" value="${appConfig.rates.current.layoffRate}" class="form-input" placeholder=" "><label class="form-label">Layoff Rate</label></div>
-                            ${wagonInputHTML('current')}
+                             <div class="form-group"><input type="number" id="currentPerWagonRate" value="${appConfig.rates.current.perWagonRate || 100}" class="form-input" placeholder=" "><label class="form-label">Per Wagon Rate</label></div>
                             <div class="form-group"><input type="number" id="currentAllowance" value="${appConfig.rates.current.allowance}" class="form-input" placeholder=" "><label class="form-label">Monthly Allowance</label></div>
                             <div class="form-group"><input type="number" id="currentAnnualBenefits" value="${appConfig.rates.current.annualBenefits || 0}" class="form-input" placeholder=" "><label class="form-label">Annual Benefits</label></div>
                             <button class="btn primary" style="width:100%" onclick="saveAgreement('current')">Save Current</button>
@@ -622,9 +550,9 @@
                             <div class="form-group"><input type="number" id="newTonRate" value="${appConfig.rates.new.tonRate}" class="form-input" placeholder=" "><label class="form-label">Ton Rate</label></div>
                             <div class="form-group"><input type="number" id="newRestRate" value="${appConfig.rates.new.restRate}" class="form-input" placeholder=" "><label class="form-label">Rest Rate</label></div>
                             <div class="form-group"><input type="number" id="newLayoffRate" value="${appConfig.rates.new.layoffRate}" class="form-input" placeholder=" "><label class="form-label">Layoff Rate</label></div>
-                            ${wagonInputHTML('new')}
+                             <div class="form-group"><input type="number" id="newPerWagonRate" value="${appConfig.rates.new.perWagonRate || 100}" class="form-input" placeholder=" "><label class="form-label">Per Wagon Rate</label></div>
                             <div class="form-group"><input type="number" id="newAllowance" value="${appConfig.rates.new.allowance}" class="form-input" placeholder=" "><label class="form-label">Monthly Allowance</label></div>
-                            <div class="form-group"><input type="number" id="newAnnualBenefits" value="${appConfig.rates.new.annualBenefits || 0}" class="form-input" placeholder=" "><label class="form-label">Annual Benefits</label></div>
+                             <div class="form-group"><input type="number" id="newAnnualBenefits" value="${appConfig.rates.new.annualBenefits || 0}" class="form-input" placeholder=" "><label class="form-label">Annual Benefits</label></div>
                             <button class="btn primary" style="width:100%" onclick="saveAgreement('new')">Save New</button>
                         </div></div>`;
                     container.innerHTML = content;
@@ -632,7 +560,7 @@
                 case 'bonus-page':
                     content = `<div class="card">
                         <h2 class="card-title">Annual Bonus & Gratuity Calculator</h2>
-                        <p style="color: var(--md-text-secondary); font-size: 14px;">Bonus ki calculation aapki set ki hui fiscal year ke hisab se ki jayegi, jismein paid leaves ka bonus bhi shamil hoga.</p>
+                        <p style="color: var(--md-text-secondary); font-size: 14px;">Bonus ki calculation fiscal year (10 Oct se 9 Oct) ke hisab se ki jayegi, jismein paid leaves ka bonus bhi shamil hoga.</p>
                         <label>Fiscal Year Select Karein</label>
                         <div class="select-group"><select id="bonusYearSelect" class="form-select"></select></div>
                         <button onclick="calculateBonus()" class="btn accent" style="width:100%">Calculate Bonus</button>
@@ -644,7 +572,7 @@
                 case 'arrears-page':
                      content = `<div class="card">
                         <h2 class="card-title">Automatic Arrear Calculator</h2>
-                        <p style="font-size: 14px; color: var(--md-text-secondary);">Yeh calculation aapki set ki hui agreement start date se aaj tak ki salary, wagon, allowance, pehle saal ka bonus aur salana mara'at ka jaame arrear banayegi.</p>
+                        <p style="font-size: 14px; color: var(--md-text-secondary);">Yeh calculation mojooda 2-saala agreement ke shuru se aaj tak ki salary, wagon, allowance, pehle saal ka bonus aur salana mara'at ka jaame arrear banayegi.</p>
                         <button onclick="calculateAutomaticArrears()" class="btn primary" style="width:100%">Calculate Automatic Arrears</button>
                         <pre id="automaticArrearsResult" style="margin-top:16px; padding:12px; background: #f5f5f5; border-radius: 4px; font-weight: 500;">Press button to calculate...</pre>
                         <hr style="margin: 24px 0; border: none; border-top: 1px solid var(--md-divider-color);">
@@ -660,7 +588,7 @@
                 case 'leaves-page':
                     content = `<div class="card">
                         <h2 class="card-title">Yearly Leave Record</h2>
-                        <p style="color: var(--md-text-secondary); font-size: 14px;">Chuttiyan aapki set ki hui fiscal year ke hisab se count ki jayengi. Total 32 chuttiyon mein se aakhri 12 paid leaves hain.</p>
+                        <p style="color: var(--md-text-secondary); font-size: 14px;">Chuttiyan 10 October se 09 October tak count ki jayengi. Total 32 chuttiyon mein se aakhri 12 paid leaves hain.</p>
                         <label>Fiscal Year Select Karein</label>
                         <div class="select-group"><select id="leavesYearSelect" class="form-select"></select></div>
                         <button onclick="calculateAndDisplayLeaves()" class="btn accent" style="width:100%">Calculate Leaves</button>
@@ -672,10 +600,6 @@
                     break;
                 case 'settings-page':
                     content = `<div class="card" style="padding:0;">
-                        <div class="settings-item" onclick="showPage('general-settings-page', 'General Settings')">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-4.44a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8.88z"></path><path d="M18 2v6h6"></path><path d="M12 18v-6"></path><path d="M9 15h6"></path></svg>
-                            <span>General Settings</span>
-                        </div>
                         <div class="settings-item" onclick="showPage('generate-payroll-page', 'Generate Payroll')">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
                             <span>Generate Payroll</span>
@@ -684,43 +608,6 @@
                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                             <span>Manage Workers</span>
                         </div>
-                    </div>`;
-                    container.innerHTML = content;
-                    break;
-                case 'general-settings-page':
-                    const settings = appConfig.settings;
-                    const [fiscalMonth, fiscalDay] = settings.fiscalYearStart.split('-');
-                    content = `<div class="card">
-                        <h2 class="card-title">General Application Settings</h2>
-                        
-                        <div class="form-group">
-                            <input type="number" id="settingWorkerCount" class="form-input" value="${settings.workerCount}" placeholder=" " required>
-                            <label for="settingWorkerCount" class="form-label">Number of Workers</label>
-                        </div>
-
-                        <div class="form-group">
-                            <input type="date" id="settingAgreementStart" class="form-select" value="${settings.agreementStartDate}">
-                            <label style="top:-10px; font-size:12px; color:var(--md-primary-color);">Agreement Start Date (For Arrears)</label>
-                        </div>
-
-                        <div class="form-group">
-                            <p style="color: var(--md-text-secondary); font-size: 14px; margin-bottom: 8px;">Fiscal Year Start (For Bonus & Leaves)</p>
-                            <div style="display:flex; gap:16px;">
-                                <div class="select-group" style="flex:1;">
-                                    <select id="settingFiscalMonth" class="form-select">${[...Array(12).keys()].map(i => `<option value="${String(i+1).padStart(2,'0')}" ${i+1 == fiscalMonth ? 'selected' : ''}>${new Date(0,i).toLocaleString('default', {month:'long'})}</option>`).join('')}</select>
-                                </div>
-                                <div class="select-group" style="flex:1;">
-                                    <select id="settingFiscalDay" class="form-select">${[...Array(31).keys()].map(i => `<option value="${String(i+1).padStart(2,'0')}" ${i+1 == fiscalDay ? 'selected' : ''}>${i+1}</option>`).join('')}</select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <label style="display:flex; align-items:center; width:100%; padding: 12px 4px; cursor:pointer;">
-                            <input type="checkbox" id="settingEnableWagons" ${settings.enableWagons ? 'checked' : ''}>
-                            <span style="margin-left:8px;">Enable Wagon Feature</span>
-                        </label>
-
-                        <button onclick="saveAppSettings()" class="btn primary" style="width:100%; margin-top: 16px;">Save Settings</button>
                     </div>`;
                     container.innerHTML = content;
                     break;
@@ -736,17 +623,15 @@
                     container.innerHTML = content;
                     break;
                 case 'manage-workers-page':
-                    const workerCount = appConfig.settings.workerCount;
-                    let workerInputsHTML = '';
-                    for(let i = 0; i < workerCount; i++) {
-                         const name = workerList[i] || '';
-                         workerInputsHTML += `<div class="form-group">
-                                            <input type="text" id="worker-name-${i}" class="form-input" value="${name}" placeholder=" " required>
-                                            <label class="form-label" for="worker-name-${i}">Worker ${i + 1} Name</label>
-                                        </div>`;
-                    }
+                    let workerInputsHTML = workerList.map((name, index) => {
+                        return `<div class="form-group">
+                                    <input type="text" id="worker-name-${index}" class="form-input" value="${name}" placeholder=" " required>
+                                    <label class="form-label" for="worker-name-${index}">Worker ${index + 1} Name</label>
+                                </div>`;
+                    }).join('');
+
                     content = `<div class="card">
-                        <p style="font-size: 14px; color: var(--md-text-secondary);">Aap ne <b>${workerCount} workers</b> set kiye hain. Yahan unke naam tabdeel karein. Khali chhorne par worker list se nikal jayega.</p>
+                        <p style="font-size: 14px; color: var(--md-text-secondary);">Yahan se aap apne workers ke naam tabdeel kar sakte hain. Khali chhorne par worker list se nikal jayega.</p>
                         ${workerInputsHTML}
                         <button onclick="saveWorkerNames()" class="btn primary" style="width:100%; margin-top: 16px;">Save Worker Names</button>
                       </div>`;
@@ -757,9 +642,10 @@
         
         function toggleMenu() { document.getElementById('side-menu').classList.toggle('open'); document.getElementById('overlay').classList.toggle('hidden'); }
         
+        // UPDATED single day calculation to include wagons
         function _calculateSingleDay(record, agreementRates) {
             const { tonRate, restRate, layoffRate, perWagonRate } = agreementRates;
-            const { type, tonnage } = record;
+            const { type, tonnage, wagons } = record;
             const present = Array.isArray(record.presentWorkers) ? record.presentWorkers : [];
             const presentCount = present.length > 0 ? present.length : (record.presentCount || 0);
             
@@ -776,13 +662,18 @@
                 return dailyEarnings;
             }
 
+            // For work and special_overtime days with present workers
             let tonnagePay = (tonnage * tonRate) / presentCount;
-            let wagonPay = appConfig.settings.enableWagons ? ((record.wagons || 0) * perWagonRate) / presentCount : 0;
+            let wagonPay = ((wagons || 0) * perWagonRate) / presentCount;
             
+            // Base pay is the greater of tonnage earning or the minimum layoff rate
             let basePay = Math.max(tonnagePay, layoffRate);
+            
+            // Final per-worker pay combines base pay and wagon pay
             let perWorkerPay = basePay + wagonPay;
 
             if (type === 'special_overtime') {
+                // Double the base pay (min layoff or tonnage) AND add wagon pay again (double pay)
                 perWorkerPay = (basePay * 2) + wagonPay;
             }
 
@@ -797,31 +688,32 @@
             showConfirmationModal('Are you sure you want to save this daily entry?', calculateAndSave);
         }
         
+        // UPDATED to get and save wagons
         async function calculateAndSave() {
             if (!appConfig.rates) { showSnackbar("Data not ready. Please wait.", 'error'); return; }
             const date = document.getElementById('entryDate').value;
             if (!date) { showSnackbar("Please select a date.", 'error'); return; }
             const dayType = document.getElementById('dayType').value;
             const tonnage = parseFloat(document.getElementById('tonnage').value) || 0;
+            const wagons = parseFloat(document.getElementById('wagons').value) || 0;
             const presentWorkers = Array.from(document.querySelectorAll('.worker-checkbox:checked')).map(cb => cb.value);
 
             if (presentWorkers.length === 0 && dayType !== 'rest') { showSnackbar("Select present workers for a work day.", 'error'); return; }
+            
+            const recordDataForCalc = { type: dayType, tonnage, wagons, presentWorkers };
+            const earnings = _calculateSingleDay(recordDataForCalc, appConfig.rates.current);
+            const perWorkerEarning = presentWorkers.length > 0 ? (earnings[presentWorkers[0]] || 0) : 0;
             
             const recordToSave = { 
                 date, 
                 type: dayType, 
                 tonnage,
+                wagons,
                 presentCount: presentWorkers.length, 
                 presentWorkers, 
+                earnings, 
+                perWorkerEarning 
             };
-
-            if(appConfig.settings.enableWagons) {
-                recordToSave.wagons = parseFloat(document.getElementById('wagons').value) || 0;
-            }
-            
-            const earnings = _calculateSingleDay(recordToSave, appConfig.rates.current);
-            recordToSave.earnings = earnings;
-            recordToSave.perWorkerEarning = presentWorkers.length > 0 ? (earnings[presentWorkers[0]] || 0) : appConfig.rates.current.layoffRate;
             
             await database.ref(`salaries/${auth.currentUser.uid}/${date}`).set(recordToSave);
             updateCycleState(dayType);
@@ -902,8 +794,7 @@
                 }
                 for (const date of daysToFill) {
                     const dateStr = date.toISOString().split('T')[0];
-                    const record = { date: dateStr, type: 'work', tonnage: 1, presentWorkers: [], presentCount: 0, isAutoGenerated: true };
-                    if(appConfig.settings.enableWagons) record.wagons = 0;
+                    const record = { date: dateStr, type: 'work', tonnage: 1, wagons: 0, presentWorkers: [], presentCount: 0, isAutoGenerated: true };
                     const earnings = _calculateSingleDay(record, appConfig.rates.current);
                     record.earnings = earnings;
                     record.perWorkerEarning = appConfig.rates.current.layoffRate;
@@ -979,23 +870,29 @@
             else { startDate = selectedPeriod; const lastDayOfMonth = new Date(year, month, 0).getDate(); endDate = `${year}-${String(month).padStart(2, '0')}-${lastDayOfMonth}`; }
             database.ref(`salaries/${auth.currentUser.uid}`).orderByChild('date').startAt(startDate).endAt(endDate).once('value', snapshot => {
                 if (!snapshot.exists()) { container.innerHTML = "<p>No daily records found for this period.</p>"; return; }
-                const enableWagons = appConfig.settings.enableWagons;
                 let rows = '';
                 const records = snapshot.val();
                 const sortedKeys = Object.keys(records).sort((a, b) => new Date(b) - new Date(a));
                 sortedKeys.forEach(key => {
                     const rec = records[key];
-                    const wagonCell = enableWagons ? `<td>${rec.wagons||0}</td>` : '';
-                    rows += `<tr><td>${rec.date}</td><td>${rec.tonnage||0}</td>${wagonCell}<td>${(rec.perWorkerEarning || 0).toFixed(2)}</td></tr>`;
+                    rows += `<tr><td>${rec.date}</td><td>${rec.tonnage||0}</td><td>${rec.wagons||0}</td><td>${(rec.perWorkerEarning || 0).toFixed(2)}</td></tr>`;
                 });
-                const wagonHeader = enableWagons ? `<th>Wagons</th>` : '';
-                container.innerHTML = `<table style="width:100%; border-collapse:collapse;"><thead><tr><th>Date</th><th>Tons</th>${wagonHeader}<th>Earning</th></tr></thead><tbody>${rows}</tbody></table>`;
+                container.innerHTML = `<table style="width:100%; border-collapse:collapse;"><thead><tr><th>Date</th><th>Tons</th><th>Wagons</th><th>Earning</th></tr></thead><tbody>${rows}</tbody></table>`;
             });
         }
         
-        function getAgreementStartDate() {
-            // Ab yeh function seedha settings se date uthayega
-            return appConfig.settings.agreementStartDate || '2023-10-10';
+        // --- ALL ARREAR FUNCTIONS ARE FULLY UPDATED ---
+        
+        function getAgreementStartDate(today = new Date()) {
+            let year = today.getFullYear();
+            const month = today.getMonth(); // 0 = January, 9 = October
+            const day = today.getDate();
+            let referenceYear = year;
+            if (month < 9 || (month === 9 && day < 10)) {
+                referenceYear = year - 1;
+            }
+            let startYear = (referenceYear % 2 === 0) ? referenceYear - 1 : referenceYear;
+            return `${startYear}-10-10`;
         }
 
         async function _calculateBonusForPeriod(startDate, endDate, agreementRates) {
@@ -1060,6 +957,7 @@
             
             resultElem.innerText = 'Calculating daily earnings, allowance, and benefits...';
 
+            // 1. Daily Earnings (Salary + Wagon) & 2. Allowance Arrears
             let actualDailyTotals = {}; workerList.forEach(w => actualDailyTotals[w] = 0);
             let hypotheticalDailyTotals = {}; workerList.forEach(w => hypotheticalDailyTotals[w] = 0);
             snapshot.forEach(child => {
@@ -1073,17 +971,14 @@
             const numAllowances = countAllowancesInRange(ARREARS_START_DATE, end);
             const allowanceArrears = numAllowances * ((appConfig.rates.new.allowance / 2) - (appConfig.rates.current.allowance / 2));
             
+            // 3. Annual Benefits Arrear
             const annualBenefitsArrear = (appConfig.rates.new.annualBenefits || 0) - (appConfig.rates.current.annualBenefits || 0);
             
+            // 4. Bonus Arrear
             resultElem.innerText = 'Calculating bonus arrear...';
-            
-            const [startMonth, startDay] = appConfig.settings.fiscalYearStart.split('-');
-            const agreementStartYear = new Date(ARREARS_START_DATE).getFullYear();
-            const BONUS_START_DATE = `${agreementStartYear}-${startMonth}-${startDay}`;
-            const endDateObj = new Date(BONUS_START_DATE);
-            endDateObj.setFullYear(endDateObj.getFullYear() + 1);
-            endDateObj.setDate(endDateObj.getDate() - 1);
-            const BONUS_END_DATE = endDateObj.toISOString().split('T')[0];
+            const bonusStartYear = parseInt(ARREARS_START_DATE.substring(0, 4));
+            const BONUS_START_DATE = `${bonusStartYear}-10-10`;
+            const BONUS_END_DATE = `${bonusStartYear + 1}-10-09`;
             
             const [currentBonus, newBonus] = await Promise.all([
                 _calculateBonusForPeriod(BONUS_START_DATE, BONUS_END_DATE, appConfig.rates.current),
@@ -1091,7 +986,7 @@
             ]);
             
             let resultText = `AUTOMATIC ARREAR REPORT\nPeriod: ${ARREARS_START_DATE} to ${end}\n`;
-            resultText += `Bonus FY: ${agreementStartYear}-${agreementStartYear+1} | Annual Benefits for ${agreementStartYear}\n`;
+            resultText += `Bonus FY: ${bonusStartYear}-${bonusStartYear+1} | Annual Benefits for ${bonusStartYear}\n`;
             resultText += `--------------------------------------\n\n`;
 
             workerList.forEach(w => {
@@ -1248,7 +1143,6 @@
             else { startDate = selectedPeriod; endDate = `${year}-${String(month).padStart(2, '0')}-${new Date(year, month, 0).getDate()}`; }
             try {
                 const snapshot = await database.ref(`salaries/${auth.currentUser.uid}`).orderByChild('date').startAt(startDate).endAt(endDate).once('value');
-                const enableWagons = appConfig.settings.enableWagons;
                 let tableHTML = `<p>No records for this period.</p>`;
                 let summaryHTML = '';
                 if (snapshot.exists()) {
@@ -1257,36 +1151,27 @@
                     Object.keys(records).sort((a,b) => new Date(a) - new Date(b)).forEach(key => {
                         const rec = records[key];
                         if (rec && rec.earnings) workerList.forEach(w => periodSalaries[w] += rec.earnings[w] || 0);
-                        const wagonCell = enableWagons ? `<td>${rec.wagons||0}</td>` : '';
-                        tableRows += `<tr><td>${new Date(rec.date + 'T00:00:00').toLocaleDateString('en-GB', {day:'2-digit', month:'2-digit'})}</td><td>${rec.tonnage||'--'}</td>${wagonCell}<td>${(rec.perWorkerEarning||0).toFixed(2)}</td></tr>`;
+                        tableRows += `<tr><td>${new Date(rec.date + 'T00:00:00').toLocaleDateString('en-GB', {day:'2-digit', month:'2-digit'})}</td><td>${rec.tonnage||'--'}</td><td>${rec.wagons||0}</td><td>${(rec.perWorkerEarning||0).toFixed(2)}</td></tr>`;
                     });
-                    const wagonHeader = enableWagons ? '<th>Wagons</th>' : '';
-                    tableHTML = `<style>.sal-tbl{width:100%;border-collapse:collapse;font-size:14px;}.sal-tbl th, .sal-tbl td{padding:8px 12px;border:1px solid #eee;text-align:left;}.sal-tbl th{font-weight:500;background:#f9f9f9}</style><table class="sal-tbl"><thead><tr><th>Date</th><th>Tons</th>${wagonHeader}<th>Payment</th></tr></thead><tbody>${tableRows}</tbody></table>`;
+                    tableHTML = `<style>.sal-tbl{width:100%;border-collapse:collapse;font-size:14px;}.sal-tbl th, .sal-tbl td{padding:8px 12px;border:1px solid #eee;text-align:left;}.sal-tbl th{font-weight:500;background:#f9f9f9}</style><table class="sal-tbl"><thead><tr><th>Date</th><th>Tons</th><th>Wagons</th><th>Payment</th></tr></thead><tbody>${tableRows}</tbody></table>`;
                     
                     const allowance = (appConfig.rates.current.allowance || 0) / 2;
                     let salaryListHTML = workerList.map(w => `<li style="display:flex;justify-content:space-between;align-items:center;padding:10px 4px;border-bottom:1px solid #eee;"><span style="font-weight:500;">${w}:</span><span>Rs ${(periodSalaries[w]+allowance).toFixed(2)}</span></li>`).join('');
-                    summaryHTML = `<div class="card" style="margin-top:24px;"><h3 class="card-title" style="font-size:16px; margin-bottom:16px;">Salary Summary</h3><ul style="list-style:none; padding:0; margin:0;">${salaryListHTML}</ul></div>`;
+                    summaryHTML = `<div class="card" style="margin-top:24px;"><h3 class="card-title" style="font-size:16px; margin-bottom:16px;">Salary Summary</h3>${salaryListHTML}</div>`;
                 }
                 container.innerHTML = tableHTML + summaryHTML;
             } catch (error) { container.innerHTML = `<p style="color:red;">Error: ${error.message}</p>`; }
         }
         
-        function getFiscalYearForDate(date) {
-            const [startMonth, startDay] = appConfig.settings.fiscalYearStart.split('-').map(Number);
-            const checkDate = new Date(date.getFullYear(), startMonth - 1, startDay);
-            return date < checkDate ? date.getFullYear() - 1 : date.getFullYear();
-        }
-
         function populateBonusYearSelector() {
             const select = document.getElementById('bonusYearSelect');
             if (!select) return;
             select.innerHTML = '';
-            let currentFiscalYear = getFiscalYearForDate(new Date());
+            let currentYear = new Date().getFullYear();
+            if (new Date().getMonth() < 9 || (new Date().getMonth() === 9 && new Date().getDate() < 10)) { currentYear--; }
             for (let i = 0; i < 5; i++) {
-                const year = currentFiscalYear - i;
-                const [startMonth] = appConfig.settings.fiscalYearStart.split('-');
-                const monthName = new Date(0, startMonth-1).toLocaleString('default', { month: 'short'});
-                select.add(new Option(`${monthName} ${year} - ${monthName} ${year + 1}`, `${year}`));
+                const year = currentYear - i;
+                select.add(new Option(`Oct ${year} - Oct ${year + 1}`, `${year}`));
             }
         }
 
@@ -1296,13 +1181,8 @@
             if (!bonusYearSelect.value) { resultElem.innerText = 'Please select a fiscal year.'; return; }
             resultElem.innerText = 'Calculating...';
             const startYear = parseInt(bonusYearSelect.value);
-            
-            const [startMonth, startDay] = appConfig.settings.fiscalYearStart.split('-');
-            const startDate = `${startYear}-${startMonth}-${startDay}`;
-            const endDateObj = new Date(startDate);
-            endDateObj.setFullYear(endDateObj.getFullYear() + 1);
-            endDateObj.setDate(endDateObj.getDate() - 1);
-            const endDate = endDateObj.toISOString().split('T')[0];
+            const startDate = `${startYear}-10-10`;
+            const endDate = `${startYear + 1}-10-09`;
             
             const bonusData = await _calculateBonusForPeriod(startDate, endDate, appConfig.rates.current);
 
@@ -1313,7 +1193,7 @@
             workerList.forEach(w => {
                 const { averageMonthlySalary, gratuity, leaveBonus, totalBonus } = bonusData[w];
                 const layoffRate = appConfig.rates.current.layoffRate || 1;
-                const paidLeavesRemaining = leaveBonus > 0 ? leaveBonus / layoffRate : 0;
+                const paidLeavesRemaining = leaveBonus / layoffRate;
 
                 resultText += `${w.padEnd(10)}:\n`;
                 resultText += `  Avg Monthly Salary (Bonus):  Rs ${averageMonthlySalary.toFixed(2)}\n`;
@@ -1328,12 +1208,11 @@
             const select = document.getElementById('leavesYearSelect');
             if (!select) return;
             select.innerHTML = '';
-            let currentFiscalYear = getFiscalYearForDate(new Date());
+            let currentYear = new Date().getFullYear();
+            if (new Date().getMonth() < 9 || (new Date().getMonth() === 9 && new Date().getDate() < 10)) { currentYear--; }
             for (let i = 0; i < 5; i++) {
-                const year = currentFiscalYear - i;
-                const [startMonth] = appConfig.settings.fiscalYearStart.split('-');
-                const monthName = new Date(0, startMonth-1).toLocaleString('default', { month: 'short'});
-                select.add(new Option(`${monthName} ${year} - ${monthName} ${year + 1}`, year));
+                const year = currentYear - i;
+                select.add(new Option(`Oct ${year} - Oct ${year + 1}`, year));
             }
         }
 
@@ -1343,14 +1222,8 @@
             if (!yearSelect || !yearSelect.value) { resultElem.innerText = 'Please select a fiscal year.'; return; }
             resultElem.innerHTML = LOADER_HTML;
             const startYear = parseInt(yearSelect.value);
-
-            const [startMonth, startDay] = appConfig.settings.fiscalYearStart.split('-');
-            const startDate = `${startYear}-${startMonth}-${startDay}`;
-            const endDateObj = new Date(startDate);
-            endDateObj.setFullYear(endDateObj.getFullYear() + 1);
-            endDateObj.setDate(endDateObj.getDate() - 1);
-            const endDate = endDateObj.toISOString().split('T')[0];
-
+            const startDate = `${startYear}-10-10`;
+            const endDate = `${startYear + 1}-10-09`;
             const snapshot = await database.ref(`salaries/${auth.currentUser.uid}`).orderByChild('date').startAt(startDate).endAt(endDate).once('value');
             if (!snapshot.exists()) { resultElem.innerHTML = `<p>No records for fiscal year ${startYear}-${startYear + 1}.</p>`; return; }
             let leaveCounts = {}; workerList.forEach(w => { leaveCounts[w] = 0; });
@@ -1384,17 +1257,11 @@
         async function saveWorkerNames() {
             const uid = auth.currentUser.uid;
             const newWorkerList = [];
-            const workerCount = appConfig.settings.workerCount;
-
-            for (let i = 0; i < workerCount; i++) {
+            for (let i = 0; i < workerList.length; i++) {
                 const input = document.getElementById(`worker-name-${i}`);
-                if (input && input.value.trim() !== '') {
-                    newWorkerList.push(input.value.trim());
-                } else {
-                    newWorkerList.push(`Worker ${i+1}`); // Default name if empty
-                }
+                if (input && input.value.trim() !== '') newWorkerList.push(input.value.trim());
             }
-            if (newWorkerList.length === 0) { showSnackbar("At least one worker is required.", 'error'); return; }
+            if (newWorkerList.length === 0) { showSnackbar("At least one worker name is required.", 'error'); return; }
             try {
                 await database.ref(`workers/${uid}`).set(newWorkerList);
                 workerList = newWorkerList;
