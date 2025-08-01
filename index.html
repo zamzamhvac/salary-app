@@ -1055,28 +1055,39 @@
         return appConfig.settings.agreementStartDate || '2023-10-10';
     }
     
-    async function _calculateBonusForPeriod(startDate, endDate, agreementRates) {
-    // Timezone ke maslon se bachne ke liye, date ke aakhir mein T23:59:59 add karein
+    // ========================================================================
+// ========= PURANE _calculateBonusForPeriod KO IS NAYE CODE SE BADLEIN =========
+// ========================================================================
+
+async function _calculateBonusForPeriod(startDate, endDate, agreementRates) {
+    // FIX #1: Timezone ke maslon se bachne ke liye query ko theek karna
     const snapshot = await database.ref(`salaries/${auth.currentUser.uid}`)
                                  .orderByChild('date')
                                  .startAt(startDate)
-                                 .endAt(endDate + 'T23:59:59') // Yeh line masle ko hal karegi
+                                 .endAt(endDate + 'T23:59:59') // Yeh line data fetch karne ka masla hal karegi
                                  .once('value');
     let results = {};
     workerList.forEach(w => { results[w] = { totalBonus: 0, averageMonthlySalary: 0, gratuity: 0, leaveBonus: 0 }; });
-    
-    // Agar snapshot khali hai, to foran zero wala result wapas karein
+
     if (!snapshot.exists()) {
+        // Agar koi data nahi mila to leave bonus calculate karke wapas bhej dein
+        const layoffRate = agreementRates.layoffRate || 0;
+        workerList.forEach(w => {
+            const leaveBonus = 12 * layoffRate; // 12 bachi hui paid leaves
+            results[w] = { totalBonus: leaveBonus, averageMonthlySalary: 0, gratuity: 0, leaveBonus: leaveBonus };
+        });
         return results;
     }
     
     const allRecords = [];
     snapshot.forEach(child => allRecords.push(child.val()));
+    
+    // YEH LINE DEBUGGING KE LIYE HAI: Yeh aapko batayegi ke kitne records milay hain
+    console.log('Bonus calculation ke liye ' + allRecords.length + ' din ka record mila.');
 
     let yearlyEarnings = {}; workerList.forEach(w => yearlyEarnings[w] = 0);
     let totalLeaveCounts = {}; workerList.forEach(w => totalLeaveCounts[w] = 0);
 
-    // Pehle se mojood _getLeaveCountsUpToDate ko istemal kareinge takeh chuttiyan sahi count hon
     for (const record of allRecords) {
         const leaveCountsForThisDay = await _getLeaveCountsUpToDate(record.date);
         const dayEarnings = _calculateSingleDay(record, agreementRates, leaveCountsForThisDay);
@@ -1095,33 +1106,23 @@
         }
     }
 
-    // --- BONUS CALCULATION KA SAHI LOGIC ---
-
-    // 1. Sirf is period ka allowance count karein
+    // FIX #2: Bonus ki calculation ko aqli (logical) banana
     const earnedAllowancePeriods = countAllowancesInRange(startDate, endDate);
     const allowancePerPeriod = (agreementRates.allowance || 0) / 2;
     const totalEarnedAllowance = earnedAllowancePeriods * allowancePerPeriod;
-
-    // 2. Guzarne wale mahinon ka hisab lagayein
+    
     const start = new Date(startDate);
     const end_ = new Date(endDate);
     let monthsPassed = (end_.getFullYear() - start.getFullYear()) * 12;
     monthsPassed -= start.getMonth();
     monthsPassed += end_.getMonth();
-    monthsPassed = monthsPassed < 0 ? 0 : monthsPassed + 1; // Kam se kam 1 mahina
-
-    // Agar 1 se kam mahina guzra hai to usay 1 farz karein, takeh zero se division na ho
-    const divisorMonths = monthsPassed > 0 ? monthsPassed : 1;
+    const divisorMonths = monthsPassed < 1 ? 1 : monthsPassed + 1;
 
     const layoffRate = agreementRates.layoffRate || 0;
 
     workerList.forEach(w => {
-        // 3. Kul kamai = Roz ki kamai + Is arsay ka allowance
         const totalEarnedPay = yearlyEarnings[w] + totalEarnedAllowance;
-        
-        // 4. Average salary = Kul kamai / Guzre hue mahine
         const averageMonthlySalary = totalEarnedPay / divisorMonths;
-        
         const gratuity = averageMonthlySalary; 
         const leavesTaken = totalLeaveCounts[w] || 0;
         const paidLeavesTaken = Math.max(0, leavesTaken - 20);
