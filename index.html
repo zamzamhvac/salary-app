@@ -347,13 +347,12 @@
                 currentCycleType = 'work';
             }
         }
-        
-        // UPDATED to include new fields
+
         async function loadAgreements() {
             const uid = auth.currentUser.uid;
             const getDefaultAgreements = () => JSON.parse(JSON.stringify({
-                current: { tonRate: 22, restRate: 1100, layoffRate: 549, allowance: 20000, perWagonRate: 100, annualBenefits: 0 },
-                new: { tonRate: 22, restRate: 1100, layoffRate: 549, allowance: 26000, perWagonRate: 100, annualBenefits: 0 }
+                current: { tonRate: 22, restRate: 1100, layoffRate: 549, allowance: 20000 },
+                new: { tonRate: 22, restRate: 1100, layoffRate: 549, allowance: 26000 }
             }));
 
             try {
@@ -376,7 +375,6 @@
             }
         }
         
-        // UPDATED to save new fields
         function saveAgreement(type) {
             showConfirmationModal(`Are you sure you want to save the '${type}' agreement?`, async () => {
                 const uid = auth.currentUser.uid;
@@ -384,9 +382,7 @@
                     tonRate: parseFloat(document.getElementById(`${type}TonRate`).value),
                     restRate: parseFloat(document.getElementById(`${type}RestRate`).value),
                     layoffRate: parseFloat(document.getElementById(`${type}LayoffRate`).value),
-                    allowance: parseFloat(document.getElementById(`${type}Allowance`).value),
-                    perWagonRate: parseFloat(document.getElementById(`${type}PerWagonRate`).value),
-                    annualBenefits: parseFloat(document.getElementById(`${type}AnnualBenefits`).value)
+                    allowance: parseFloat(document.getElementById(`${type}Allowance`).value)
                 };
                 await database.ref(`agreements/${uid}/${type}`).update(data);
                 showSnackbar(`${type.charAt(0).toUpperCase() + type.slice(1)} Agreement saved!`, 'success');
@@ -415,7 +411,6 @@
             }
             let content = '';
             switch(pageId) {
-                // UPDATED Daily Entry page with wagon field
                 case 'daily-entry-page':
                     content = `<div class="grid-layout">
                         <div class="card">
@@ -426,10 +421,7 @@
                             </div>
                             <input type="date" id="entryDate" class="form-select">
                             <div class="select-group"><select id="dayType" class="form-select"><option value="work">Work Day</option><option value="rest">Rest Day</option><option value="special_overtime">Special Overtime</option></select></div>
-                            <div id="tonnage-section">
-                                <div class="form-group"><input type="number" id="tonnage" class="form-input" placeholder=" " required><label for="tonnage" class="form-label">Total Tonnage</label></div>
-                                <div class="form-group"><input type="number" id="wagons" class="form-input" placeholder=" " required value="0"><label for="wagons" class="form-label">Number of Wagons</label></div>
-                            </div>
+                            <div id="tonnage-section" class="form-group"><input type="number" id="tonnage" class="form-input" placeholder=" " required><label for="tonnage" class="form-label">Total Tonnage</label></div>
                             <h3 style="font-size: 16px; font-weight: 500; margin-top:24px;">Worker Attendance</h3>
                             <ul class="stagger-in" style="list-style:none; padding:0; max-height:200px; overflow-y:auto;">${workerList.map(w => `<li><label style="display:flex; align-items:center; width:100%; padding: 4px 0;"><input type="checkbox" class="worker-checkbox" checked value="${w}"> <span style="margin-left:8px;">${w}</span></label></li>`).join('')}</ul>
                             <button class="btn accent" onclick="confirmAndSaveDailyEntry()" style="width:100%; margin-top: 16px;">Calculate & Save</button>
@@ -476,25 +468,20 @@
                     initializeSalariesView();
                     renderCurrentExpectedSalary();
                     break;
-                // UPDATED Agreement page with wagon and benefits fields
                 case 'agreements-page':
                     content = `<div class="grid-layout">
                         <div class="card"><h2 class="card-title">Current Agreement</h2>
                             <div class="form-group"><input type="number" id="currentTonRate" value="${appConfig.rates.current.tonRate}" class="form-input" placeholder=" "><label class="form-label">Ton Rate</label></div>
                             <div class="form-group"><input type="number" id="currentRestRate" value="${appConfig.rates.current.restRate}" class="form-input" placeholder=" "><label class="form-label">Rest Rate</label></div>
                             <div class="form-group"><input type="number" id="currentLayoffRate" value="${appConfig.rates.current.layoffRate}" class="form-input" placeholder=" "><label class="form-label">Layoff Rate</label></div>
-                             <div class="form-group"><input type="number" id="currentPerWagonRate" value="${appConfig.rates.current.perWagonRate || 100}" class="form-input" placeholder=" "><label class="form-label">Per Wagon Rate</label></div>
                             <div class="form-group"><input type="number" id="currentAllowance" value="${appConfig.rates.current.allowance}" class="form-input" placeholder=" "><label class="form-label">Monthly Allowance</label></div>
-                            <div class="form-group"><input type="number" id="currentAnnualBenefits" value="${appConfig.rates.current.annualBenefits || 0}" class="form-input" placeholder=" "><label class="form-label">Annual Benefits</label></div>
                             <button class="btn primary" style="width:100%" onclick="saveAgreement('current')">Save Current</button>
                         </div>
                         <div class="card"><h2 class="card-title">New Agreement</h2>
                             <div class="form-group"><input type="number" id="newTonRate" value="${appConfig.rates.new.tonRate}" class="form-input" placeholder=" "><label class="form-label">Ton Rate</label></div>
                             <div class="form-group"><input type="number" id="newRestRate" value="${appConfig.rates.new.restRate}" class="form-input" placeholder=" "><label class="form-label">Rest Rate</label></div>
                             <div class="form-group"><input type="number" id="newLayoffRate" value="${appConfig.rates.new.layoffRate}" class="form-input" placeholder=" "><label class="form-label">Layoff Rate</label></div>
-                             <div class="form-group"><input type="number" id="newPerWagonRate" value="${appConfig.rates.new.perWagonRate || 100}" class="form-input" placeholder=" "><label class="form-label">Per Wagon Rate</label></div>
                             <div class="form-group"><input type="number" id="newAllowance" value="${appConfig.rates.new.allowance}" class="form-input" placeholder=" "><label class="form-label">Monthly Allowance</label></div>
-                             <div class="form-group"><input type="number" id="newAnnualBenefits" value="${appConfig.rates.new.annualBenefits || 0}" class="form-input" placeholder=" "><label class="form-label">Annual Benefits</label></div>
                             <button class="btn primary" style="width:100%" onclick="saveAgreement('new')">Save New</button>
                         </div></div>`;
                     container.innerHTML = content;
@@ -512,20 +499,20 @@
                     populateBonusYearSelector();
                     break;
                 case 'arrears-page':
-                     content = `<div class="card">
-                        <h2 class="card-title">Automatic Arrear Calculator</h2>
-                        <p style="font-size: 14px; color: var(--md-text-secondary);">Yeh calculation mojooda 2-saala agreement ke shuru se aaj tak ki salary, wagon, allowance, pehle saal ka bonus aur salana mara'at ka jaame arrear banayegi.</p>
-                        <button onclick="calculateAutomaticArrears()" class="btn primary" style="width:100%">Calculate Automatic Arrears</button>
-                        <pre id="automaticArrearsResult" style="margin-top:16px; padding:12px; background: #f5f5f5; border-radius: 4px; font-weight: 500;">Press button to calculate...</pre>
+                    content = `<div class="card">
+                        <h2 class="card-title">Naye Agreement Ke Mutabiq Aaj Tak Ka Arrear</h2>
+                        <p style="font-size: 14px; color: var(--md-text-secondary);">Yeh calculation 10 Oct 2023 se aaj tak ki salary, allowance aur 2023-24 ke bonus ka jaame arrear banayegi.</p>
+                        <pre id="automaticArrearsResult" style="margin-top:16px; padding:12px; background: #f5f5f5; border-radius: 4px; font-weight: 500;">Calculating...</pre>
                         <hr style="margin: 24px 0; border: none; border-top: 1px solid var(--md-divider-color);">
-                        <h2 class="card-title">Manual Arrear (Makhsoos Muddat)</h2>
-                        <p style="color: var(--md-text-secondary); font-size: 14px;">Yeh sirf salary, wagon aur allowance ka arrear banayega (Bonus/Mara'at shamil nahi). Yeh khaas suratehaal ke liye hai.</p>
+                        <h2 class="card-title">Makhsoos Muddat Ka Arrear Nikalein</h2>
+                        <p style="color: var(--md-text-secondary); font-size: 14px;">Neeche di gayi dates ke hisab se salary ka arrear banayein aur usmein 2023-24 ke bonus ka arrear shamil karein.</p>
                         <label>Select Period for Arrears Calculation</label>
                         <div class="form-group"><input type="date" id="arrearsStartDate" class="form-select"></div>
                         <div class="form-group"><input type="date" id="arrearsEndDate" class="form-select"></div>
-                        <button onclick="calculateTrueArrears()" class="btn accent" style="width:100%">Calculate Manual Arrears</button>
+                        <button onclick="calculateTrueArrears()" class="btn accent" style="width:100%">Calculate True Arrears</button>
                         <pre id="arrearsResult" style="margin-top:16px; padding:12px; background: #f5f5f5; border-radius: 4px;"></pre></div>`;
                     container.innerHTML = content;
+                    calculateAutomaticArrears();
                     break;
                 case 'leaves-page':
                     content = `<div class="card">
@@ -583,74 +570,58 @@
         }
         
         function toggleMenu() { document.getElementById('side-menu').classList.toggle('open'); document.getElementById('overlay').classList.toggle('hidden'); }
-        
-        // UPDATED single day calculation to include wagons
+
         function _calculateSingleDay(record, agreementRates) {
-            const { tonRate, restRate, layoffRate, perWagonRate } = agreementRates;
-            const { type, tonnage, wagons } = record;
+            const { tonRate, restRate, layoffRate } = agreementRates;
+            const { type, tonnage } = record;
             const present = Array.isArray(record.presentWorkers) ? record.presentWorkers : [];
             const presentCount = present.length > 0 ? present.length : (record.presentCount || 0);
-            
             let dailyEarnings = {};
             workerList.forEach(w => dailyEarnings[w] = 0);
-
-            if (type === 'rest') {
-                workerList.forEach(w => { dailyEarnings[w] = restRate; });
-                return dailyEarnings;
-            }
-
-            if (presentCount === 0) {
+            if (presentCount === 0 && type !== 'rest') {
                 workerList.forEach(w => dailyEarnings[w] = layoffRate);
                 return dailyEarnings;
             }
-
-            // For work and special_overtime days with present workers
-            let tonnagePay = (tonnage * tonRate) / presentCount;
-            let wagonPay = ((wagons || 0) * perWagonRate) / presentCount;
-            
-            // Base pay is the greater of tonnage earning or the minimum layoff rate
-            let basePay = Math.max(tonnagePay, layoffRate);
-            
-            // Final per-worker pay combines base pay and wagon pay
-            let perWorkerPay = basePay + wagonPay;
-
-            if (type === 'special_overtime') {
-                // Double the base pay (min layoff or tonnage) AND add wagon pay again (double pay)
-                perWorkerPay = (basePay * 2) + wagonPay;
+            if (type === 'work' && presentCount > 0) {
+                let perWorker = (tonnage * tonRate) / presentCount;
+                if (perWorker < layoffRate) perWorker = layoffRate;
+                workerList.forEach(w => { dailyEarnings[w] = present.includes(w) ? perWorker : layoffRate; });
+            } else if (type === 'rest') {
+                workerList.forEach(w => { dailyEarnings[w] = restRate; });
+            } else if (type === 'special_overtime' && presentCount > 0) {
+                const baseEarningPerWorker = (tonnage * tonRate) / presentCount;
+                let perWorkerPay;
+                if (baseEarningPerWorker < layoffRate) {
+                    perWorkerPay = (layoffRate * 2) + layoffRate;
+                } else {
+                    perWorkerPay = (baseEarningPerWorker * 2) + layoffRate;
+                }
+                workerList.forEach(w => { dailyEarnings[w] = present.includes(w) ? perWorkerPay : layoffRate; });
             }
-
-            workerList.forEach(w => {
-                dailyEarnings[w] = present.includes(w) ? perWorkerPay : layoffRate;
-            });
-
             return dailyEarnings;
         }
 
         function confirmAndSaveDailyEntry() {
             showConfirmationModal('Are you sure you want to save this daily entry?', calculateAndSave);
         }
-        
-        // UPDATED to get and save wagons
+
         async function calculateAndSave() {
             if (!appConfig.rates) { showSnackbar("Data not ready. Please wait.", 'error'); return; }
             const date = document.getElementById('entryDate').value;
             if (!date) { showSnackbar("Please select a date.", 'error'); return; }
             const dayType = document.getElementById('dayType').value;
             const tonnage = parseFloat(document.getElementById('tonnage').value) || 0;
-            const wagons = parseFloat(document.getElementById('wagons').value) || 0;
             const presentWorkers = Array.from(document.querySelectorAll('.worker-checkbox:checked')).map(cb => cb.value);
-
             if (presentWorkers.length === 0 && dayType !== 'rest') { showSnackbar("Select present workers for a work day.", 'error'); return; }
             
-            const recordDataForCalc = { type: dayType, tonnage, wagons, presentWorkers };
+            const recordDataForCalc = { type: dayType, tonnage, presentWorkers };
             const earnings = _calculateSingleDay(recordDataForCalc, appConfig.rates.current);
             const perWorkerEarning = presentWorkers.length > 0 ? (earnings[presentWorkers[0]] || 0) : 0;
             
             const recordToSave = { 
                 date, 
                 type: dayType, 
-                tonnage,
-                wagons,
+                tonnage, 
                 presentCount: presentWorkers.length, 
                 presentWorkers, 
                 earnings, 
@@ -736,14 +707,14 @@
                 }
                 for (const date of daysToFill) {
                     const dateStr = date.toISOString().split('T')[0];
-                    const record = { date: dateStr, type: 'work', tonnage: 1, wagons: 0, presentWorkers: [], presentCount: 0, isAutoGenerated: true };
+                    const record = { date: dateStr, type: 'work', tonnage: 1, presentWorkers: [], presentCount: 0, isAutoGenerated: true };
                     const earnings = _calculateSingleDay(record, appConfig.rates.current);
                     record.earnings = earnings;
                     record.perWorkerEarning = appConfig.rates.current.layoffRate;
                     await database.ref(`salaries/${uid}/${dateStr}`).set(record);
                 }
                 if (daysToFill.length > 0) {
-                    showSnackbar(`${daysToFill.length} missing days filled with default entries`, 'success');
+                    showSnackbar(`${daysToFill.length} missing days filled with 1-ton entries`, 'success');
                     loadHistory();
                 }
             } catch (error) {
@@ -817,34 +788,25 @@
                 const sortedKeys = Object.keys(records).sort((a, b) => new Date(b) - new Date(a));
                 sortedKeys.forEach(key => {
                     const rec = records[key];
-                    rows += `<tr><td>${rec.date}</td><td>${rec.tonnage||0}</td><td>${rec.wagons||0}</td><td>${(rec.perWorkerEarning || 0).toFixed(2)}</td></tr>`;
+                    rows += `<tr><td>${rec.date}</td><td>${rec.type}</td><td>${rec.presentCount !== undefined ? `${rec.presentCount}/${workerList.length}` : 'N/A'}</td><td>${(rec.perWorkerEarning || 0).toFixed(2)}</td></tr>`;
                 });
-                container.innerHTML = `<table style="width:100%; border-collapse:collapse;"><thead><tr><th>Date</th><th>Tons</th><th>Wagons</th><th>Earning</th></tr></thead><tbody>${rows}</tbody></table>`;
+                container.innerHTML = `<table style="width:100%; border-collapse:collapse;"><thead><tr><th>Date</th><th>Type</th><th>Present</th><th>Earning</th></tr></thead><tbody>${rows}</tbody></table>`;
             });
         }
         
-        // --- ALL ARREAR FUNCTIONS ARE FULLY UPDATED ---
+        // --- NEW AND UPDATED FUNCTIONS FOR ARREARS START HERE ---
         
-        function getAgreementStartDate(today = new Date()) {
-            let year = today.getFullYear();
-            const month = today.getMonth(); // 0 = January, 9 = October
-            const day = today.getDate();
-            let referenceYear = year;
-            if (month < 9 || (month === 9 && day < 10)) {
-                referenceYear = year - 1;
-            }
-            let startYear = (referenceYear % 2 === 0) ? referenceYear - 1 : referenceYear;
-            return `${startYear}-10-10`;
-        }
-
         async function _calculateBonusForPeriod(startDate, endDate, agreementRates) {
             const snapshot = await database.ref(`salaries/${auth.currentUser.uid}`).orderByChild('date').startAt(startDate).endAt(endDate).once('value');
             let results = {};
             workerList.forEach(w => {
-                results[w] = { totalBonus: 0, averageMonthlySalary: 0, gratuity: 0, leaveBonus: 0 };
+                results[w] = { totalBonus: 0, averageMonthlySalary: 0, gratuity: 0, leaveBonus: 0, };
             });
 
-            if (!snapshot.exists()) return results;
+            if (!snapshot.exists()) {
+                console.log(`No records for bonus period ${startDate} to ${endDate}.`);
+                return results;
+            }
 
             let yearlyEarnings = {}; workerList.forEach(w => yearlyEarnings[w] = 0);
             let leaveCounts = {}; workerList.forEach(w => leaveCounts[w] = 0);
@@ -856,7 +818,9 @@
                     workerList.forEach(w => { yearlyEarnings[w] += dayEarnings[w] || 0; });
                     if (record.type === 'work' || record.type === 'special_overtime') {
                         const present = record.presentWorkers || [];
-                        workerList.forEach(w => { if (!present.includes(w)) leaveCounts[w]++; });
+                        workerList.forEach(w => {
+                            if (!present.includes(w)) leaveCounts[w]++;
+                        });
                     }
                 }
             });
@@ -876,118 +840,122 @@
                 const totalBonus = averageMonthlySalary + gratuity + leaveBonus;
                 results[w] = { totalBonus, averageMonthlySalary, gratuity, leaveBonus };
             });
+
             return results;
         }
-        
+
         async function calculateAutomaticArrears() {
             const resultElem = document.getElementById('automaticArrearsResult');
-            resultElem.innerText = 'Calculating... Please wait...';
+            if (!resultElem) return;
+            resultElem.innerText = 'Calculating salary and bonus arrears...';
 
-            const ARREARS_START_DATE = getAgreementStartDate();
+            const ARREARS_START_DATE = '2023-10-10';
             const end = new Date().toISOString().split('T')[0];
-
-            if (new Date(ARREARS_START_DATE) > new Date(end)) {
-                 resultElem.innerText = `Current agreement cycle starts on ${ARREARS_START_DATE}. No arrears to calculate.`;
-                 return;
-            }
-            
             const snapshot = await database.ref(`salaries/${auth.currentUser.uid}`).orderByChild('date').startAt(ARREARS_START_DATE).endAt(end).once('value');
+
             if (!snapshot.exists()) {
-                resultElem.innerText = `No records found from ${ARREARS_START_DATE} to Today.`;
+                resultElem.innerText = `No records found from ${ARREARS_START_DATE} to Today. Cannot calculate arrears.`;
                 return;
             }
-            
-            resultElem.innerText = 'Calculating daily earnings, allowance, and benefits...';
 
-            // 1. Daily Earnings (Salary + Wagon) & 2. Allowance Arrears
-            let actualDailyTotals = {}; workerList.forEach(w => actualDailyTotals[w] = 0);
-            let hypotheticalDailyTotals = {}; workerList.forEach(w => hypotheticalDailyTotals[w] = 0);
+            let actualSalaryTotals = {}; workerList.forEach(w => actualSalaryTotals[w] = 0);
+            let hypotheticalSalaryTotals = {}; workerList.forEach(w => hypotheticalSalaryTotals[w] = 0);
+
             snapshot.forEach(child => {
                 const record = child.val();
-                if (!record) return;
+                if (!record || !record.earnings) return;
+                const newEarnings = _calculateSingleDay(record, appConfig.rates.new);
                 workerList.forEach(w => {
-                    actualDailyTotals[w] += (_calculateSingleDay(record, appConfig.rates.current)[w] || 0);
-                    hypotheticalDailyTotals[w] += (_calculateSingleDay(record, appConfig.rates.new)[w] || 0);
+                    actualSalaryTotals[w] += record.earnings[w] || 0;
+                    hypotheticalSalaryTotals[w] += newEarnings[w] || 0;
                 });
             });
+
             const numAllowances = countAllowancesInRange(ARREARS_START_DATE, end);
             const allowanceArrears = numAllowances * ((appConfig.rates.new.allowance / 2) - (appConfig.rates.current.allowance / 2));
-            
-            // 3. Annual Benefits Arrear
-            const annualBenefitsArrear = (appConfig.rates.new.annualBenefits || 0) - (appConfig.rates.current.annualBenefits || 0);
-            
-            // 4. Bonus Arrear
-            resultElem.innerText = 'Calculating bonus arrear...';
-            const bonusStartYear = parseInt(ARREARS_START_DATE.substring(0, 4));
-            const BONUS_START_DATE = `${bonusStartYear}-10-10`;
-            const BONUS_END_DATE = `${bonusStartYear + 1}-10-09`;
+
+            const BONUS_START_DATE = '2023-10-10';
+            const BONUS_END_DATE = '2024-10-09';
             
             const [currentBonus, newBonus] = await Promise.all([
                 _calculateBonusForPeriod(BONUS_START_DATE, BONUS_END_DATE, appConfig.rates.current),
                 _calculateBonusForPeriod(BONUS_START_DATE, BONUS_END_DATE, appConfig.rates.new)
             ]);
             
-            let resultText = `AUTOMATIC ARREAR REPORT\nPeriod: ${ARREARS_START_DATE} to ${end}\n`;
-            resultText += `Bonus FY: ${bonusStartYear}-${bonusStartYear+1} | Annual Benefits for ${bonusStartYear}\n`;
+            let resultText = `Arrears from ${ARREARS_START_DATE} to ${end}\n(Bonus for ${BONUS_START_DATE} to ${BONUS_END_DATE})\n`;
             resultText += `--------------------------------------\n\n`;
 
             workerList.forEach(w => {
-                const dailyEarningArrear = hypotheticalDailyTotals[w] - actualDailyTotals[w];
+                const salaryArrear = hypotheticalSalaryTotals[w] - actualSalaryTotals[w];
                 const bonusArrear = newBonus[w].totalBonus - currentBonus[w].totalBonus;
-                const totalArrear = dailyEarningArrear + allowanceArrears + bonusArrear + annualBenefitsArrear;
+                const totalArrear = salaryArrear + allowanceArrears + bonusArrear;
 
                 resultText += `${w.padEnd(10)}:\n`;
-                resultText += `  Daily Earning (Sal+Wagon): Rs ${dailyEarningArrear.toFixed(2)}\n`;
-                resultText += `  Allowance Arrear:          Rs ${allowanceArrears.toFixed(2)}\n`;
-                resultText += `  Bonus Arrear:              Rs ${bonusArrear.toFixed(2)}\n`;
-                resultText += `  Annual Benefits Arrear:    Rs ${annualBenefitsArrear.toFixed(2)}\n`;
+                resultText += `  Salary Arrear:    Rs ${salaryArrear.toFixed(2)}\n`;
+                resultText += `  Allowance Arrear: Rs ${allowanceArrears.toFixed(2)}\n`;
+                resultText += `  Bonus Arrear:     Rs ${bonusArrear.toFixed(2)}\n`;
                 resultText += `  ------------------------------------\n`;
-                resultText += `  >> TOTAL PAYABLE:           Rs ${totalArrear.toFixed(2)} <<\n\n`;
+                resultText += `  >> TOTAL PAYABLE: Rs ${totalArrear.toFixed(2)} <<\n\n`;
             });
             resultElem.innerText = resultText;
         }
-        
+
         async function calculateTrueArrears() {
             const resultElem = document.getElementById('arrearsResult');
             const start = document.getElementById('arrearsStartDate').value;
             const end = document.getElementById('arrearsEndDate').value;
-            if(!start || !end) { resultElem.innerText = 'Please select both start and end dates.'; return; }
+            if(!start || !end) { resultElem.innerText = 'Please select dates.'; return; }
             resultElem.innerText = 'Calculating...';
 
             const snapshot = await database.ref(`salaries/${auth.currentUser.uid}`).orderByChild('date').startAt(start).endAt(end).once('value');
-            if (!snapshot.exists()){
-                 resultElem.innerText = 'No records found in the selected period.';
-                 return;
-            }
+            if (!snapshot.exists()) { resultElem.innerText = `No records in period. Calculating bonus arrear only...`; }
 
             let actualTotals = {}; workerList.forEach(w => actualTotals[w] = 0);
             let hypotheticalTotals = {}; workerList.forEach(w => hypotheticalTotals[w] = 0);
-
-            snapshot.forEach(child => {
-                const record = child.val();
-                if (!record) return;
-                workerList.forEach(w => {
-                    actualTotals[w] += (_calculateSingleDay(record, appConfig.rates.current)[w] || 0);
-                    hypotheticalTotals[w] += (_calculateSingleDay(record, appConfig.rates.new)[w] || 0);
+            if(snapshot.exists()){
+                snapshot.forEach(child => {
+                    const record = child.val();
+                    if (!record || !record.earnings) return;
+                    const newEarnings = _calculateSingleDay(record, appConfig.rates.new);
+                    workerList.forEach(w => {
+                        actualTotals[w] += record.earnings[w] || 0;
+                        hypotheticalTotals[w] += newEarnings[w] || 0;
+                    });
                 });
-            });
+            }
 
             const numAllowances = countAllowancesInRange(start, end);
             const allowanceArrears = numAllowances * ((appConfig.rates.new.allowance / 2) - (appConfig.rates.current.allowance / 2));
             
-            let resultText = `MANUAL ARREARS (NO BONUS/BENEFITS)\nPeriod: ${start} to ${end}\n`;
-            resultText += `-----------------------------------\n\n`;
+            resultElem.innerText = `Calculating for ${start} to ${end}...\nNow calculating bonus arrear...`;
+            const BONUS_START_DATE = '2023-10-10';
+            const BONUS_END_DATE = '2024-10-09';
+
+            const [currentBonus, newBonus] = await Promise.all([
+                _calculateBonusForPeriod(BONUS_START_DATE, BONUS_END_DATE, appConfig.rates.current),
+                _calculateBonusForPeriod(BONUS_START_DATE, BONUS_END_DATE, appConfig.rates.new)
+            ]);
             
+            let resultText = `TRUE ARREARS\nPeriod: ${start} to ${end}\n`;
+            resultText += `Bonus Period: ${BONUS_START_DATE} to ${BONUS_END_DATE}\n`;
+            resultText += `-----------------------------------\n\n`;
+
             workerList.forEach(w => {
-                const dailyEarningArrear = hypotheticalTotals[w] - actualTotals[w];
-                const totalArrear = dailyEarningArrear + allowanceArrears;
+                const salaryArrear = hypotheticalTotals[w] - actualTotals[w];
+                const bonusArrear = newBonus[w].totalBonus - currentBonus[w].totalBonus;
+                const totalArrear = salaryArrear + allowanceArrears + bonusArrear;
+
                 resultText += `${w.padEnd(10)}:\n`;
-                resultText += `  Daily Earning (Sal+Wagon): Rs ${dailyEarningArrear.toFixed(2)}\n`;
-                resultText += `  Allowance Arrear:          Rs ${allowanceArrears.toFixed(2)}\n`;
-                resultText += `  >> TOTAL PAYABLE:          Rs ${totalArrear.toFixed(2)} <<\n\n`;
+                resultText += `  Salary (${start} to ${end}): Rs ${salaryArrear.toFixed(2)}\n`;
+                resultText += `  Allowance (${numAllowances} events):   Rs ${allowanceArrears.toFixed(2)}\n`;
+                resultText += `  Bonus (${BONUS_START_DATE.substring(0,4)} fiscal year): Rs ${bonusArrear.toFixed(2)}\n`;
+                resultText += `  ----------------------------------\n`;
+                resultText += `  >> TOTAL PAYABLE:              Rs ${totalArrear.toFixed(2)} <<\n\n`;
             });
             resultElem.innerText = resultText;
         }
+
+        // --- END OF NEW/UPDATED ARREARS FUNCTIONS ---
 
         function initializeHistoryView() {
             populateHistorySelector(); 
@@ -1093,9 +1061,9 @@
                     Object.keys(records).sort((a,b) => new Date(a) - new Date(b)).forEach(key => {
                         const rec = records[key];
                         if (rec && rec.earnings) workerList.forEach(w => periodSalaries[w] += rec.earnings[w] || 0);
-                        tableRows += `<tr><td>${new Date(rec.date + 'T00:00:00').toLocaleDateString('en-GB', {day:'2-digit', month:'2-digit'})}</td><td>${rec.tonnage||'--'}</td><td>${rec.wagons||0}</td><td>${(rec.perWorkerEarning||0).toFixed(2)}</td></tr>`;
+                        tableRows += `<tr><td>${new Date(rec.date + 'T00:00:00').toLocaleDateString('en-GB', {day:'2-digit', month:'2-digit'})}</td><td>${rec.tonnage||'--'}</td><td>${rec.presentCount !== undefined ? rec.presentCount:'N/A'}</td><td>${(rec.perWorkerEarning||0).toFixed(2)}</td></tr>`;
                     });
-                    tableHTML = `<style>.sal-tbl{width:100%;border-collapse:collapse;font-size:14px;}.sal-tbl th, .sal-tbl td{padding:8px 12px;border:1px solid #eee;text-align:left;}.sal-tbl th{font-weight:500;background:#f9f9f9}</style><table class="sal-tbl"><thead><tr><th>Date</th><th>Tons</th><th>Wagons</th><th>Payment</th></tr></thead><tbody>${tableRows}</tbody></table>`;
+                    tableHTML = `<style>.sal-tbl{width:100%;border-collapse:collapse;font-size:14px;}.sal-tbl th, .sal-tbl td{padding:8px 12px;border:1px solid #eee;text-align:left;}.sal-tbl th{font-weight:500;background:#f9f9f9}</style><table class="sal-tbl"><thead><tr><th>Date</th><th>Tons</th><th>Present</th><th>Payment</th></tr></thead><tbody>${tableRows}</tbody></table>`;
                     
                     const allowance = (appConfig.rates.current.allowance || 0) / 2;
                     let salaryListHTML = workerList.map(w => `<li style="display:flex;justify-content:space-between;align-items:center;padding:10px 4px;border-bottom:1px solid #eee;"><span style="font-weight:500;">${w}:</span><span>Rs ${(periodSalaries[w]+allowance).toFixed(2)}</span></li>`).join('');
@@ -1113,7 +1081,7 @@
             if (new Date().getMonth() < 9 || (new Date().getMonth() === 9 && new Date().getDate() < 10)) { currentYear--; }
             for (let i = 0; i < 5; i++) {
                 const year = currentYear - i;
-                select.add(new Option(`Oct ${year} - Oct ${year + 1}`, `${year}`));
+                select.add(new Option(`Oct ${year} - Oct ${year + 1}`, year));
             }
         }
 
@@ -1126,6 +1094,7 @@
             const startDate = `${startYear}-10-10`;
             const endDate = `${startYear + 1}-10-09`;
             
+            // Using the new helper function with CURRENT rates for standard bonus calculation
             const bonusData = await _calculateBonusForPeriod(startDate, endDate, appConfig.rates.current);
 
             let resultText = `BONUS & GRATUITY\nFiscal Year: ${startDate} to ${endDate}\n`;
@@ -1134,8 +1103,9 @@
             
             workerList.forEach(w => {
                 const { averageMonthlySalary, gratuity, leaveBonus, totalBonus } = bonusData[w];
-                const layoffRate = appConfig.rates.current.layoffRate || 1;
-                const paidLeavesRemaining = leaveBonus / layoffRate;
+                const totalLeavesTaken = 0; // Note: This info isn't returned from helper, but UI doesn't need it.
+                const paidLeavesRemaining = leaveBonus / (appConfig.rates.current.layoffRate || 1);
+
 
                 resultText += `${w.padEnd(10)}:\n`;
                 resultText += `  Avg Monthly Salary (Bonus):  Rs ${averageMonthlySalary.toFixed(2)}\n`;
